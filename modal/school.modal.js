@@ -1,10 +1,21 @@
 import mongoose from "mongoose";
+ 
 
 const schoolSchema = new mongoose.Schema(
   {
     schoolID: {
       type: String,
       required: true,
+      unique: true,
+    },
+    censusNumber: {
+      type: String,
+    },
+    type: {
+      type: String,
+    },
+    zone: {
+      type: String,
     },
     name: {
       type: String,
@@ -13,6 +24,7 @@ const schoolSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
+      unique: true,
     },
     password: {
       type: String,
@@ -22,10 +34,18 @@ const schoolSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    studentCount: {
+      type: Number
+    },
     apiKey: {
-        type: String,
-        default: Math.floor(1000000 + Math.random() * 9000).toString(),
-      },
+      type: String,
+      required: true,
+      unique: true,
+    },
+    active: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );
