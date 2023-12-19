@@ -4,6 +4,7 @@ import { errorHandler } from "../util/error.js";
 import jwt from "jsonwebtoken";
 export const schoolLogin = async (req, res, next) => {
   const { email, password } = req.body;
+  
   try {
     const school = await School.findOne({ email });
 
