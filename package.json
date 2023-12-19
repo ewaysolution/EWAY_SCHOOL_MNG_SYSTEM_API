@@ -1,12 +1,13 @@
 {
   "name": "api",
   "version": "1.0.0",
-  "description": "",
+  "description": "School Management System API",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "dev": "nodemon index.js",
-    "start": "node index.js "
+    "start": "node index.js ",
+    "deploy": "firebase deploy --only functions:api"
   },
   "author": "",
   "license": "ISC",
@@ -15,6 +16,8 @@
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^4.5.0",
     "generate-api-key": "^1.0.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.2",
@@ -22,5 +25,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": "18"
   }
 }

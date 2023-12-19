@@ -19,6 +19,11 @@ mongoose
     console.log(err);
   });
 
+  
+ 
+app.use("/api/school/auth", authRouter);
+app.use("/api/school/marks", marksRouter);
+
 app.use("/api/school", schoolRouter);
 app.use("/api/school/auth", authRouter);
 app.use("/api/school/marks", marksRouter);
@@ -34,6 +39,7 @@ app.use((err, re, res, next) => {
 });
 
 // Server Running
-var listener = app.listen(9000, () => {
+var listener = app.listen(process.env.PORT, () => {
   console.log(`🚀 App listening on the port ${listener.address().port}`);
 });
+
