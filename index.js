@@ -5,11 +5,21 @@ import cookieParser from "cookie-parser";
 import schoolRouter from "./routes/school.router.js";
 import authRouter from "./routes/auth.route.js";
 import marksRouter from "./routes/marks.route.js";
+import teacherRouter from "./routes/teacher.route.js";
+import studentRouter from "./routes/student.route.js";
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
 dotenv.config();
+
+app.all('/', function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "X-Requested-With");
+  next();
+ });
+
+ 
 mongoose
   .connect(process.env.MONGO)
   .then(() => {
@@ -19,14 +29,14 @@ mongoose
     console.log(err);
   });
 
-  
- 
 app.use("/api/school/auth", authRouter);
 app.use("/api/school/marks", marksRouter);
 
 app.use("/api/school", schoolRouter);
 app.use("/api/school/auth", authRouter);
 app.use("/api/school/marks", marksRouter);
+app.use("/api/teacher", teacherRouter);
+app.use("/api/student", studentRouter);
 
 app.use((err, re, res, next) => {
   const statusCode = err.statusCode || 500;
@@ -42,4 +52,3 @@ app.use((err, re, res, next) => {
 var listener = app.listen(process.env.PORT, () => {
   console.log(`🚀 App listening on the port ${listener.address().port}`);
 });
-
