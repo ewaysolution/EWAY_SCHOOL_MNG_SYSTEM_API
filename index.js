@@ -30,6 +30,13 @@ mongoose
     console.log(err);
   });
 
+
+app.use(`/api/v1`, (req, res) => {
+  res.status(201).json({
+    message: "Student Marks Added Successfully",
+  });
+})
+
 app.use("/api/school/auth", authRouter);
 app.use("/api/school/marks", marksRouter);
 
