@@ -7,19 +7,22 @@ import authRouter from "./routes/auth.route.js";
 import marksRouter from "./routes/marks.route.js";
 import teacherRouter from "./routes/teacher.route.js";
 import studentRouter from "./routes/student.route.js";
+import subjectRouter from "./routes/subject.route.js";
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
 dotenv.config();
 
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, PUT, POST");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept"
+  );
   next();
 });
-
 
 mongoose
   .connect(process.env.MONGO)
@@ -30,21 +33,23 @@ mongoose
     console.log(err);
   });
 
-
 app.use(`/api/v1`, (req, res) => {
   res.status(201).json({
     message: "Student Marks Added Successfully",
   });
-})
-
-app.use("/api/school/auth", authRouter);
-app.use("/api/school/marks", marksRouter);
+});
 
 app.use("/api/school", schoolRouter);
+
 app.use("/api/school/auth", authRouter);
+
 app.use("/api/school/marks", marksRouter);
-app.use("/api/teacher", teacherRouter);
-app.use("/api/student", studentRouter);
+
+app.use("/api/school/teacher", teacherRouter);
+
+app.use("/api/school/student", studentRouter);
+
+app.use("/api/school/subject", subjectRouter);
 
 app.use((err, re, res, next) => {
   const statusCode = err.statusCode || 500;
