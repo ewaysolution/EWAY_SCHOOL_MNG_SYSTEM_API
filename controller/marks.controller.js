@@ -165,6 +165,7 @@ export const addMarks = async (req, res, next) => {
     studentID,
     subjectResults,
     term,
+    stream,
     grade,
     classType,
     createdBy,
@@ -184,7 +185,7 @@ export const addMarks = async (req, res, next) => {
       const newMarks = await Marks.create({
         schoolID: schoolID,
         studentID: studentID,
-        stream: "maths",
+        stream: stream,
         term: term,
         grade: grade,
         classType: classType,

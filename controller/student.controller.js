@@ -23,11 +23,12 @@ export const registerStudent = async (req, res, next) => {
 };
 
 // get student details
-export const getStudentDetailsByIndex = async (req, res, next) => {
-  const { studentID } = req.params;
-  // console.log(req.params);
+export const getStudentDetailsBySchoolIDStudentID = async (req, res, next) => {
+  const { schoolID, studentID } = req.params;
+
   try {
     const StudentDetails = await Student.find({
+      schoolID,
       studentID,
     });
     if (StudentDetails.length === 0) {
@@ -46,7 +47,7 @@ export const getStudentDetailsByIndex = async (req, res, next) => {
 // get all student details
 export const getAllStudentDetails = async (req, res, next) => {
   const { schoolID } = req.params;
-  console.log(req.params);
+ 
   try {
     const StudentsDetails = await Student.find({
       schoolID: "001",
@@ -56,7 +57,7 @@ export const getAllStudentDetails = async (req, res, next) => {
     } else {
       res.status(201).json({
         message: "Students Details Fetched",
-        StudentsDetails: StudentsDetails,
+        StudentsDetails,
       });
     }
   } catch (error) {

@@ -34,10 +34,10 @@ export const schoolLogin = async (req, res, next) => {
             token,
           });
       } else {
-        return next(errorHandler(401, "School does not exist"));
+        return next(errorHandler(401, "School information not found."));
       }
     } else {
-      return next(errorHandler(401, "School does not exist"));
+      return next(errorHandler(401, "School information not found."));
     }
   } catch (error) {
     next(error);

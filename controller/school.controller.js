@@ -27,7 +27,7 @@ export const getSchoolByApiKey = async (req, res, next) => {
     // console.log(req.params.apiKey);
     const SchoolDetail = await School.find({ apiKey: req.params.apiKey });
     if (SchoolDetail.length === 0) {
-      next(errorHandler(401, "School Not Found"));
+      next(errorHandler(401, ""));
     } else {
       res.status(201).json(SchoolDetail);
     }

@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const studentSchema = new mongoose.Schema(
   {
+    admissionNo: {
+      type: String,
+      // required: true,
+      unique: true,
+    },
     studentID: {
       type: String,
       required: true,
@@ -11,9 +16,25 @@ const studentSchema = new mongoose.Schema(
       type: String,
       // required: true,
     },
-    name: {
+    medium: {
       type: String,
-      required: true,
+      // required: true,
+    },
+    name: {
+      initial: {
+        type: String,
+        required: true,
+      },
+      fname: {
+        type: String,
+        required: true,
+      },
+      lname: {
+        type: String,
+      },
+      fullName: {
+        type: String,
+      },
     },
     password: {
       type: String,
@@ -30,6 +51,15 @@ const studentSchema = new mongoose.Schema(
     gender: {
       type: String,
       required: true,
+    },
+
+    bloodGroup: {
+      type: String,
+      // required: true,
+    },
+    religion: {
+      type: String,
+      // required: true,
     },
     contactInformation: {
       email: {
@@ -69,23 +99,26 @@ const studentSchema = new mongoose.Schema(
         // required: true,
       },
     },
-    birthCertificate:  
-      {
-        certificateNo: {
-          type: String,
-          // required: true,
-        },
-        birthCertificateFront: {
-          type: String,
-          // required: true,
-        },
-        birthCertificateBack: {
-          type: String,
-          // required: true,
-        },
+    birthCertificate: {
+      certificateNo: {
+        type: String,
+        // required: true,
       },
- 
+      birthCertificateFront: {
+        type: String,
+        // required: true,
+      },
+      birthCertificateBack: {
+        type: String,
+        // required: true,
+      },
+    },
+
     schoolID: {
+      type: String,
+      required: true,
+    },
+    shortBIO: {
       type: String,
       required: true,
     },
