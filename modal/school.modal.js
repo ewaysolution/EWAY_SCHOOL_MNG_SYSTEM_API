@@ -46,6 +46,9 @@ const schoolSchema = new mongoose.Schema(
       type: String,
       default: "System Admin",
     },
+    avatar: {
+      type: String,
+    },
     active: {
       type: Boolean,
       default: true,

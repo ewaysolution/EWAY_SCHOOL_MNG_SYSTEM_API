@@ -5,17 +5,24 @@ import bcryptjs from "bcryptjs";
 
 // register student
 export const registerStudent = async (req, res, next) => {
-  const { studentID, name, email, password, contact, schoolID } = req.body;
+  const { studentID, password, schoolID, admissionNo, NIC } = req.body;
 
   try {
-    const studentDetails = await Student.find({ studentID });
+    const nicNo = NIC ? NIC.NICNo : null;
+    const studentDetails = await Student.find({
+      $or: [{ studentID }, { admissionNo }, { "NIC.NICNo": nicNo }],
+      $and: [{ schoolID }],
+    });
 
     if (studentDetails && studentDetails.length > 0) {
       next(errorHandler(401, "Student Already Exists"));
     } else {
       req.body.password = bcryptjs.hashSync(password, 10);
       const newStudent = await Student.create(req.body);
-      res.status(201).json(newStudent);
+      res.status(201).json({
+        message: "Student registered successfully",
+        StudentDetails: newStudent,
+      });
     }
   } catch (error) {
     next(error);
@@ -47,7 +54,7 @@ export const getStudentDetailsBySchoolIDStudentID = async (req, res, next) => {
 // get all student details
 export const getAllStudentDetails = async (req, res, next) => {
   const { schoolID } = req.params;
- 
+
   try {
     const StudentsDetails = await Student.find({
       schoolID: "001",
