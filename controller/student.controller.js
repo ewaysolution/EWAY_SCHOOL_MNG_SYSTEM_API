@@ -71,3 +71,25 @@ export const getAllStudentDetails = async (req, res, next) => {
     next(error.message);
   }
 };
+
+//delete Student  by school id and studentID
+export const deleteStudent = async (req, res, next) => {
+  const { schoolID, studentID } = req.params;
+  console.log(req.params)
+
+  try {
+    const StudentsDetails = await Student.deleteOne({
+      schoolID,
+      studentID,
+    });
+    if (StudentsDetails.deletedCount === 0) {
+      next(errorHandler(401, "Students Details Not Found"));
+    } else {
+      res.status(201).json({
+        message: "Students Details Deleted Successfully",
+      });
+    }
+  } catch (error) {
+    next(error.message);
+  }
+};
