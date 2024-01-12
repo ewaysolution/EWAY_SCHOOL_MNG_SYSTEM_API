@@ -5,23 +5,39 @@ import bcryptjs from "bcryptjs";
 
 // register student
 export const registerStudent = async (req, res, next) => {
-  const { studentID, password, schoolID, admissionNo, NIC } = req.body;
+  let studentsData = req.body;
+  if (Array.isArray(req.body)) {
+    // For multiple students
+    studentsData = req.body;
+  } else {
+    // For a single student
+    studentsData = [req.body];
+  }
+
+  const schoolID = studentsData[0].schoolID; // Assuming all students belong to the same school
+
+  // Hash passwords for each student
+  const hashedStudents = studentsData.map((student) => {
+    const hashedPassword = bcryptjs.hashSync(student.password, 10);
+    return { ...student, password: hashedPassword };
+  });
 
   try {
-    const nicNo = NIC ? NIC.NICNo : null;
-    const studentDetails = await Student.find({
-      $or: [{ studentID }, { admissionNo }, { "NIC.NICNo": nicNo }],
-      $and: [{ schoolID }],
+    const existingStudents = await Student.find({
+      $or: hashedStudents.map(({ studentID, admissionNo, NIC }) => ({
+        $or: [{ studentID }, { admissionNo }, { "NIC.NICNo": NIC?.NICNo }],
+      })),
+      schoolID,
     });
 
-    if (studentDetails && studentDetails.length > 0) {
-      next(errorHandler(401, "Student Already Exists"));
+    if (existingStudents && existingStudents.length > 0) {
+      next(errorHandler(401, "One or more students already exist"));
     } else {
-      req.body.password = bcryptjs.hashSync(password, 10);
-      const newStudent = await Student.create(req.body);
+      const newStudents = await Student.insertMany(hashedStudents);
+
       res.status(201).json({
-        message: "Student registered successfully",
-        StudentDetails: newStudent,
+        message: "Students registered successfully",
+        StudentsDetails: newStudents,
       });
     }
   } catch (error) {
@@ -57,7 +73,7 @@ export const getAllStudentDetails = async (req, res, next) => {
 
   try {
     const StudentsDetails = await Student.find({
-      schoolID: "001",
+      schoolID: schoolID,
     });
     if (StudentsDetails.length === 0) {
       next(errorHandler(401, "Students Details Not Found"));
@@ -75,7 +91,7 @@ export const getAllStudentDetails = async (req, res, next) => {
 //delete Student  by school id and studentID
 export const deleteStudent = async (req, res, next) => {
   const { schoolID, studentID } = req.params;
-  console.log(req.params)
+  // console.log(req.params);
 
   try {
     const StudentsDetails = await Student.deleteOne({
@@ -83,10 +99,10 @@ export const deleteStudent = async (req, res, next) => {
       studentID,
     });
     if (StudentsDetails.deletedCount === 0) {
-      next(errorHandler(401, "Students Details Not Found"));
+      next(errorHandler(401, "Student Details Not Found"));
     } else {
       res.status(201).json({
-        message: "Students Details Deleted Successfully",
+        message: "Student Details Deleted Successfully",
       });
     }
   } catch (error) {

@@ -42,9 +42,9 @@ const schoolSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    role: {
+    userType: {
       type: String,
-      default: "System Admin",
+      default: "Admin",
     },
     avatar: {
       type: String,

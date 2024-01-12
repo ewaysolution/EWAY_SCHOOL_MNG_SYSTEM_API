@@ -4,19 +4,34 @@ import { errorHandler } from "../util/error.js";
 import bcryptjs from "bcryptjs";
 
 export const signupSchool = async (req, res, next) => {
-  const { schoolID, password } = req.body;
-
   try {
-    const SchoolDetail = await School.find({ schoolID: schoolID });
+    const { schoolID, email, password,contact } = req.body;
 
-    if (SchoolDetail && SchoolDetail.length > 0) {
-      next(errorHandler(401, "School Already Exists"));
-    } else {
-      req.body.apiKey = generateApiKey({ method: "bytes" }) + "_" + schoolID;
-      req.body.password = bcryptjs.hashSync(password, 10);
-      const newSchool = await School.create(req.body);
-      res.status(201).json(newSchool);
+    const existingSchool = await School.findOne({ schoolID });
+    const existingEmail = await School.findOne({ email });
+    const existingContact = await School.findOne({ contact });
+
+    if (existingSchool) {
+      return next(errorHandler(401, "School Already Exists"));
     }
+
+    if (existingEmail) {
+      return next(errorHandler(401, "Email Already Exists. Please Enter different Email."));
+    }
+    if (existingContact) {
+      return next(errorHandler(401, "Contact Number Already Exists. Please Enter different Contact Number."));
+    }
+
+    const apiKey = generateApiKey({ method: "bytes" }) + "_" + schoolID;
+    const hashedPassword = bcryptjs.hashSync(password, 10);
+
+    const newSchool = await School.create({
+      ...req.body,
+      apiKey,
+      password: hashedPassword,
+    });
+
+    res.status(201).json(newSchool);
   } catch (error) {
     next(error);
   }
@@ -69,6 +84,23 @@ export const getAllSchools = async (req, res, next) => {
         schools: SchoolDetails,
       });
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getSchoolBySchoolID = async (req, res, next) => {
+  try {
+    const schoolDetail = await School.findOne({
+      schoolID: req.params.schoolID,
+    });
+
+    if (!schoolDetail) {
+      // If no matching document is found, return an error
+      return next(errorHandler(401, ""));
+    }
+
+    res.status(201).json(schoolDetail);
   } catch (error) {
     next(error);
   }

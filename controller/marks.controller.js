@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Marks from "../modal/marks.modal.js";
 import { errorHandler } from "../util/error.js";
 import bcryptjs from "bcryptjs";
@@ -73,22 +74,12 @@ export const getMarkBySchIDStdIDTermGrade = async (req, res, next) => {
 
 export const getMarkBySchoolID = async (req, res, next) => {
   const { schoolID } = req.params;
+
   try {
-    //merge marks and student details
     const marks = await Marks.aggregate([
       {
-        $match: { schoolID: schoolID },  
+        $match: { schoolID: schoolID },
       },
-
-      {
-        $lookup: {
-          from: "students",
-          localField: "studentID",
-          foreignField: "studentID",
-          as: "studentDetails",
-        },
-      },
-
       {
         $unwind: "$subjectResults",
       },
@@ -100,17 +91,20 @@ export const getMarkBySchoolID = async (req, res, next) => {
           as: "subjectDetails",
         },
       },
-
       {
         $unwind: "$subjectDetails",
       },
-      //   {
-      //     $project: {
-      //         'studentDetails.name': 0, // Exclude the 'name' field from the joined 'students' documents
-      //         'subjectResults': 1, // Include the 'subjectResults' field
-      //         // Add other fields you want to include or exclude
-      //     },
-      // },
+      {
+        $lookup: {
+          from: "students",
+          localField: "studentID",
+          foreignField: "studentID",
+          as: "studentDetails",
+        },
+      },
+      {
+        $unwind: "$studentDetails",
+      },
       {
         $group: {
           _id: "$_id",
@@ -125,7 +119,6 @@ export const getMarkBySchoolID = async (req, res, next) => {
           active: { $first: "$active" },
           createdAt: { $first: "$createdAt" },
           updatedAt: { $first: "$updatedAt" },
-          // __v: { $first: "$__v" },
           subjectResults: {
             $push: {
               subjectID: "$subjectResults.subjectID",
@@ -140,8 +133,7 @@ export const getMarkBySchoolID = async (req, res, next) => {
       },
       {
         $project: {
-          "studentDetails.password": 0, // Exclude the 'name' field from studentDetails
-          // Add other fields you want to include or exclude
+          "studentDetails.password": 0, // Exclude the 'password' field from studentDetails
         },
       },
     ]);
@@ -204,14 +196,46 @@ export const addMarks = async (req, res, next) => {
   }
 };
 
-export const updateMarks = async (req, res, next) => {
-  res.send("Hello");
+export const deleteMarks = async (req, res, next) => {
+  try {
+    const markIdString = req.params.id;
+
+    // Check if the input is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(markIdString)) {
+      return res.status(400).json({
+        message: "Invalid ObjectId format",
+      });
+    }
+
+    const markId = new mongoose.Types.ObjectId(markIdString);
+
+    const response = await Marks.deleteOne({
+      _id: markId,
+    });
+
+    if (response.deletedCount > 0) {
+      // Successfully deleted
+      res.status(200).json({
+        message: "Marks Details Deleted Successfully",
+      });
+    } else {
+      // Document not found, consider it deleted
+      res.status(200).json({
+        message: "Marks Details Not Found (considered deleted)",
+      });
+    }
+  } catch (error) {
+    // Handle unexpected errors
+    console.error("Error:", error.message);
+    next(errorHandler(500, "Internal Server Error"));
+  }
 };
 
-export const deleteMarks = async (req, res, next) => {
-  res.send("Hello");
-};
 
 export const inActiveMarks = async (req, res, next) => {
+  res.send("Hello");
+};
+
+export const updateMarks = async (req, res, next) => {
   res.send("Hello");
 };
