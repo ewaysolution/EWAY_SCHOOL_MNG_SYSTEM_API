@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+//SCHOOL MODEL------------------->
+
+model School {
+  schoolID          String          @id @map("_id")
+  type              String
+  name              String
+  password          String
+  zone              String?
+  studentCount      Int?
+  apiKey            String          @unique
+  userType          String          @default("Admin")
+  avatar            String?
+  active            Boolean         @default(true)
+  verificationToken String?
+  resetToken        String?
+  emailVerified     Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  contact           ContactDetails?
+}
+
+model ContactDetails {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  email    String
+  address  String?
+  phone    String
+  school   School? @relation(fields: [schoolID], references: [schoolID])
+  schoolID String  @unique @map("schoolID")
+}
+
+//SCHOOL MODEL------------------->
+
+// Define the teacher model------------------->
+model Teacher {
+  teacherID          String   @id @map("_id")
+  password           String
+  avatar             String?
+  medium             String
+  initial            String
+  fname              String
+  lname              String
+  fullName           String
+  gender             String?
+  religion           String?
+  dob                DateTime @map("DOB")
+  nic                String?  @unique @map("NICNo")
+  residentialAddress String?
+  permanentAddress   String
+  mobile             String
+  home               String?
+  email              String
+  userType           String   @default("Teacher")
+  shortBIO           String?
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  schoolID           String
+
+  subjects SubjectTaken[]
+}
+
+model Subject {
+  subjectID String  @id @map("_id")
+  name      String
+  grade     String
+  active    Boolean @default(true)
+
+  subjectTaken SubjectTaken[]
+}
+
+model SubjectTaken {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  active    Boolean @default(true)
+  grade     String
+  teacher   Teacher @relation(fields: [teacherID], references: [teacherID])
+  teacherID String  @map("teacherID")
+
+  subject   Subject @relation(fields: [subjectID], references: [subjectID])
+  subjectID String  @map("subjectID")
+
+  schoolID String
+}
+
+// Define the Student model
+model Student {
+  studentID          String  @id @map("_id")
+  admissionNo        String  @unique
+  avatar             String?
+  medium             String
+  initial            String
+  fname              String
+  lname              String
+  fullName           String
+  password           String?
+  DOB                String?
+  gender             String?
+  religion           String?
+  email              String? @unique
+  contactNo          String?
+  guardianContactNo  String?
+  permanentAddress   String?
+  residentialAddress String?
+  NIC                String? @unique
+  schoolID           String
+  marks              Marks[]
+}
+
+model Marks {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  schoolID       String
+  term           String
+  grade          String
+  stream         String?
+  classType      String?
+  subjectMarks   Json[]
+  createdBy      String
+  lastModifiedBy String
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  student        Student  @relation(fields: [studentID], references: [studentID])
+  studentID      String
+}
+
+// Define the teacher model------------------->
+
+// model User {
+//   id                String   @id @default(auto()) @map("_id") @db.ObjectId
+//   name              String   @unique
+//   email             String   @unique
+//   url               String   @unique
+//   password          String
+//   createdAt         DateTime @default(now())
+//   updatedAt         DateTime @updatedAt
+//   verificationToken String?
+//   resetToken        String?
+//   emailVerified     Boolean  @default(false)
+// }
+
+// model User {
+//   id                String   @id @default(auto()) @map("_id") @db.ObjectId
+//   name              String   @unique
+//   email             String   @unique
+//   password          String
+//   // userType          String   @default("Admin") @enum(["teacher", "Admin", "staff"])
+//   verificationToken String?
+//   resetToken        String?
+//   emailVerified     Boolean  @default(false)
+//   createdAt         DateTime @default(now())
+//   updatedAt         DateTime @updatedAt
+// }

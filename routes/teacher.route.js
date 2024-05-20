@@ -1,10 +1,13 @@
 import express from "express";
-import { registerTeacher, getAllTeacherDetails, deleteTeacher, getTeacherWithSchoolDetails } from "../controller/teacher.controller.js";
-
+import { registerTeacher,subjectTaken,getTeacher } from "../controller/teacher.controller.js"
+import { verifyToken } from "../util/verifyUser.js";
 const teacherRouter = express.Router();
 
-teacherRouter.post("/register", registerTeacher);
-teacherRouter.get("/get/:schoolID", getAllTeacherDetails);
-teacherRouter.get("/get/teacher/:teacherID",getTeacherWithSchoolDetails);
-teacherRouter.delete("/delete/:schoolID/:teacherID",deleteTeacher );
+teacherRouter.post("/register", verifyToken, registerTeacher);
+teacherRouter.get("/:teacherID", verifyToken,getTeacher);
+teacherRouter.post("/subjectTaken", verifyToken,subjectTaken);
+
+// teacherRouter.get("/get/:schoolID", getAllTeacherDetails);
+// teacherRouter.get("/get/teacher/:teacherID",getTeacherWithSchoolDetails);
+// teacherRouter.delete("/delete/:schoolID/:teacherID",deleteTeacher );
 export default teacherRouter;

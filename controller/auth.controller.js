@@ -1,12 +1,22 @@
 import bcryptjs from "bcryptjs";
-import School from "../modal/school.modal.js";
-import Teacher from "../modal/teacher.modal.js";
+import { PrismaClient } from "@prisma/client";
 import { errorHandler } from "../util/error.js";
 import jwt from "jsonwebtoken";
+
+const prisma = new PrismaClient();
+
 export const schoolLogin = async (req, res, next) => {
   const { schoolID, password } = req.body;
   try {
-    const school = await School.findOne({ schoolID });
+    const school = await prisma.school.findUnique({
+      where: {
+        schoolID: schoolID,
+      },
+      // Foreign table include
+      include: {
+        contact: true, // Include the associated ContactDetails
+      },
+    });
 
     if (school) {
       const isMatch = bcryptjs.compareSync(password, school.password);
@@ -35,28 +45,30 @@ export const schoolLogin = async (req, res, next) => {
             token,
           });
       } else {
-        return next(errorHandler(401, "School information not found."));
+        return next(errorHandler(401, "Please check your credentials."));
       }
     } else {
-      return next(errorHandler(401, "School information not found."));
+      return next(errorHandler(401, "Please check your credentials."));
     }
   } catch (error) {
     next(error);
   }
 };
 
-// Teachers login page
 export const teacherLogin = async (req, res, next) => {
   const { teacherID, password } = req.body;
   try {
-    const teacher = await Teacher.findOne({ teacherID });
+    const teacher = await prisma.teacher.findUnique({
+      where: {
+        teacherID: teacherID,
+      },
+    });
 
     if (teacher) {
       const isMatch = bcryptjs.compareSync(password, teacher.password);
       if (isMatch) {
         const token = jwt.sign(
           {
-            apiKey: teacher.apiKey,
             teacherID: teacherID,
           },
           process.env.JWT_SECRET
@@ -78,10 +90,56 @@ export const teacherLogin = async (req, res, next) => {
             token,
           });
       } else {
-        return next(errorHandler(401, "Teacher does not exist"));
+        return next(errorHandler(401, "Please check your credentials."));
       }
     } else {
-      return next(errorHandler(401, "Teacher does not exist"));
+      return next(errorHandler(401, "Please check your credentials."));
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const studentLogin = async (req, res, next) => {
+  const { studentID, password } = req.body;
+  try {
+    const student = await prisma.student.findUnique({
+      where: {
+        studentID: studentID,
+      },
+    });
+
+    if (student) {
+      const isMatch = bcryptjs.compareSync(password, student.password);
+      if (isMatch) {
+        const token = jwt.sign(
+          {
+            studentID: studentID,
+          },
+          process.env.JWT_SECRET
+          // {
+          //   expiresIn: "30s",
+          // }
+        );
+        return res
+          .cookie("token", token, {
+            path: "/",
+            // expires: new Date(Date.now() + 10000 * 30),
+            httpOnly: true,
+            sameSite: "lax",
+          })
+          .status(200)
+          .json({
+            Message: "Successfully Login",
+            StudentDetails: student,
+
+            token,
+          });
+      } else {
+        return next(errorHandler(401, "Please check your credentials."));
+      }
+    } else {
+      return next(errorHandler(401, "Please check your credentials."));
     }
   } catch (error) {
     next(error);
