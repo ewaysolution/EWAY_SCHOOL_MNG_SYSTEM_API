@@ -93,6 +93,36 @@ export const getAllStudentBySchoolID = async (req, res, next) => {
     next(error.message);
   }
 };
+
+
+
+export const updateStudentByStudentIDSchoolID = async (req, res, next) => {
+  const { studentID, schoolID } = req.params;
+  try {
+    const StudentDetails = await prisma.student.update({
+      where: {
+        studentID: studentID,
+        schoolID: schoolID,
+      },
+      data: {
+        ...req.body,
+      },
+    });
+
+    if (StudentDetails.length === 0) {
+      next(errorHandler(401, "Student Not Found"));
+    }
+    res.status(201).json({
+      message: "Student Details Updated",
+    })
+
+
+  } catch (error) {
+    next(error.message);
+  }
+};
+
+
 // // get student details
 // export const getStudentDetailsBySchoolIDStudentID = async (req, res, next) => {
 //   const { schoolID, studentID } = req.params;
