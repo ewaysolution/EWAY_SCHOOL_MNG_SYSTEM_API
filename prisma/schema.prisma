@@ -92,8 +92,8 @@ model SubjectTaken {
 
 // Define the Student model
 model Student {
-  studentID          String  @id @map("_id")
-  admissionNo        String  @unique
+  studentID          String   @id @map("_id")
+  admissionNo        String   @unique
   avatar             String?
   medium             String
   initial            String
@@ -104,13 +104,18 @@ model Student {
   DOB                String?
   gender             String?
   religion           String?
-  email              String? @unique
+  email              String?  @unique
   contactNo          String?
   guardianContactNo  String?
   permanentAddress   String?
   residentialAddress String?
-  NIC                String? @unique
+  NIC                String?  @unique
   schoolID           String
+  shortBIO           String?
+  active             Boolean  @default(true)
+  createdBy          String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
   marks              Marks[]
 }
 
@@ -122,13 +127,13 @@ model Marks {
   stream         String?
   classType      String?
   subjectMarks   Json[]
-  createdBy      String
-  lastModifiedBy String
   active         Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   student        Student  @relation(fields: [studentID], references: [studentID])
   studentID      String
+  createdBy      String
+  lastModifiedBy String
 }
 
 // Define the teacher model------------------->

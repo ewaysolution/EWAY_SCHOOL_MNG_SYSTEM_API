@@ -40,21 +40,20 @@ export const registerStudent = async (req, res, next) => {
 };
 
 export const getStudentByID = async (req, res, next) => {
-  const { studentID,schoolID } = req.params;
+  const { studentID, schoolID } = req.params;
 
   try {
     const StudentDetails = await prisma.student.findMany({
       where: {
         studentID: studentID,
         schoolID: schoolID,
-        
       },
 
       include: {
         marks: true,
-      }
+      },
     });
-    
+
     if (StudentDetails.length === 0) {
       next(errorHandler(401, "Student Not Found"));
     } else {
@@ -66,8 +65,34 @@ export const getStudentByID = async (req, res, next) => {
   } catch (error) {
     next(error.message);
   }
-}
+};
 
+export const getAllStudentBySchoolID = async (req, res, next) => {
+  const { schoolID } = req.params;
+
+  try {
+    const StudentsDetails = await prisma.student.findMany({
+      where: {
+        schoolID: schoolID,
+      },
+
+      include: {
+        marks: true,
+      },
+    });
+
+    if (StudentsDetails.length === 0) {
+      next(errorHandler(401, "Students Not Found in this school"));
+    } else {
+      res.status(201).json({
+        message: "Students Details Fetched",
+        StudentsDetails: StudentsDetails,
+      });
+    }
+  } catch (error) {
+    next(error.message);
+  }
+};
 // // get student details
 // export const getStudentDetailsBySchoolIDStudentID = async (req, res, next) => {
 //   const { schoolID, studentID } = req.params;
