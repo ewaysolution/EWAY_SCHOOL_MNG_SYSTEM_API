@@ -94,10 +94,9 @@ export const getAllStudentBySchoolID = async (req, res, next) => {
   }
 };
 
-
-
 export const updateStudentByStudentIDSchoolID = async (req, res, next) => {
   const { studentID, schoolID } = req.params;
+console.log(req.body)
   try {
     const StudentDetails = await prisma.student.update({
       where: {
@@ -114,14 +113,11 @@ export const updateStudentByStudentIDSchoolID = async (req, res, next) => {
     }
     res.status(201).json({
       message: "Student Details Updated",
-    })
-
-
+    });
   } catch (error) {
     next(error.message);
   }
 };
-
 
 // // get student details
 // export const getStudentDetailsBySchoolIDStudentID = async (req, res, next) => {
