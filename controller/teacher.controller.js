@@ -14,9 +14,10 @@ export const registerTeacher = async (req, res, next) => {
     name,
     gender,
     religion,
-    dob,
+    DOB,
     nic,
     email,
+    marriageStatus,
     userType,
     shortBIO,
     active,
@@ -25,7 +26,7 @@ export const registerTeacher = async (req, res, next) => {
   try {
     const teacherDetails = await prisma.teacher.findMany({
       where: {
-        OR: [{ teacherID: teacherID }, { nic: nic }, { email: email }],
+        AND: [{ teacherID: teacherID }, { nic: nic }, { email: email }],
       },
     });
 
@@ -41,12 +42,13 @@ export const registerTeacher = async (req, res, next) => {
           avatar: req.body.avatar,
           medium: req.body.medium,
           initial: req.body.initial,
+          marriageStatus: req.body.marriageStatus,
           fname: req.body.fname,
           lname: req.body.lname,
           fullName: req.body.fullName,
           gender: req.body.gender,
           religion: req.body.religion,
-          dob: new Date(req.body.dob),
+          DOB: req.body.DOB,
           nic: req.body.nic,
           residentialAddress: req.body.residentialAddress,
           permanentAddress: req.body.permanentAddress,
@@ -126,6 +128,55 @@ export const subjectTaken = async (req, res, next) => {
       message: "Subject assigned successfully",
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllTeacherBySchoolID = async (req, res, next) => {
+  try {
+    const teachersDetails = await prisma.teacher.findMany({
+      where: {
+        schoolID: req.params.schoolID,
+      },
+    });
+    if (teachersDetails.length === 0) {
+      next(errorHandler(401, "No teachers registered yet"));
+    } else {
+      res.status(201).json({
+        message: "Get Teacher Details Successfully",
+        teachers: teachersDetails,
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateTeacherByTeacherSchoolID = async (req, res, next) => {
+  try {
+    const { schoolID, teacherID } = req.params;
+    const TeacherDetails = await prisma.teacher.update({
+      where: {
+        teacherID: teacherID,
+        schoolID: schoolID,
+      },
+
+      data:  req.body
+    });
+
+    res.status(201).json({
+      message: "Teacher Details Updated Successfully",
+      TeacherDetails: TeacherDetails,
+    });
+  } catch (error) {
+    if (error.code === "P2025") {
+      // Handle the case where the record to update is not found
+      res.status(404).json({
+        success: false,
+        message: "Teacher not found with the given ID and School ID",
+      });
+      return null; // Return null to prevent Prisma from retrying
+    }
     next(error);
   }
 };

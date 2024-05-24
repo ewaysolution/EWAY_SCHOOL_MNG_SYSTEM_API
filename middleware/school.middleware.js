@@ -43,3 +43,4 @@ export const validateSchoolReg = (req, res, next) => {
   }
   next();
 };
+

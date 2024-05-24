@@ -22,7 +22,6 @@ export const signupSchool = async (req, res, next) => {
       },
     });
 
-
     // If email or contact already exists, return an error
     if (existingSchool.length > 0) {
       res.status(400).json({
@@ -67,6 +66,63 @@ export const signupSchool = async (req, res, next) => {
     });
   } catch (error) {
     console.error("Error creating school:", error);
+  }
+};
+
+export const getSchools = async (req, res, next) => {
+  try {
+    const schools = await prisma.school.findMany({
+      include: {
+        contact: true,
+      },
+    });
+
+    if (schools.length === 0) {
+      // Assuming errorHandler is defined elsewhere and it correctly creates an error object
+      return next(errorHandler(401, "No School Registered"));
+    } else {
+      res.status(200).json({
+        message: "School Details Fetched",
+        schools, // Sending the fetched schools in the response
+      });
+    }
+  } catch (error) {
+    // Passing the error message to the next middleware
+    return next(error.message);
+  }
+};
+
+export const UpdateSchoolBySchoolID = async (req, res, next) => {
+  const { schoolID } = req.params;
+  const { type, name, password, studentCount, avatar, contact, zone } =
+    req.body;
+
+  const hashedPassword = bcryptjs.hashSync(password, 10);
+
+  try {
+    const SchoolDetails = await prisma.school.update({
+      where: {
+        schoolID: schoolID,
+      },
+      data: {
+        name: name,
+        type: type,
+        password: hashedPassword,
+        studentCount: studentCount,
+        avatar: avatar,
+        zone: zone,
+        contact: {
+          update: {
+            email: contact.email,
+            address: contact.address,
+            phone: contact.phone,
+          },
+        },
+      },
+    });
+    res.status(201).json(SchoolDetails);
+  } catch (error) {
+    next(error);
   }
 };
 

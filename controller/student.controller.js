@@ -108,14 +108,24 @@ console.log(req.body)
       },
     });
 
-    if (StudentDetails.length === 0) {
-      next(errorHandler(401, "Student Not Found"));
-    }
+   
     res.status(201).json({
-      message: "Student Details Updated",
+      message: "Student Details Updated Successfully",
+      StudentsDetails: StudentDetails,
     });
   } catch (error) {
-    next(error.message);
+
+    if (error.code === "P2025") {
+      // Handle the case where the record to update is not found
+      res.status(404).json({
+        success: false,
+        message: "Student not found with the given ID and School ID",
+      });
+      return null; // Return null to prevent Prisma from retrying
+    }
+    next(error);
+
+    
   }
 };
 

@@ -51,8 +51,9 @@ model Teacher {
   fullName           String
   gender             String?
   religion           String?
-  dob                DateTime @map("DOB")
-  nic                String?  @unique @map("NICNo")
+  DOB                String?
+  NIC                String?  @unique
+  marriageStatus     String?
   residentialAddress String?
   permanentAddress   String
   mobile             String
@@ -112,6 +113,7 @@ model Student {
   NIC                String?  @unique
   schoolID           String
   shortBIO           String?
+
   active             Boolean  @default(true)
   createdBy          String
   createdAt          DateTime @default(now())

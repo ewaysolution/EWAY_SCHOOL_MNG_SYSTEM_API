@@ -1,9 +1,10 @@
 import express from "express";
-import {registerMarks} from "../controller/marks.controller.js";
+import {registerMarks,getAllMarks} from "../controller/marks.controller.js";
 import { verifyToken } from "../util/verifyUser.js";
 
 const marksRouter = express.Router();
-marksRouter.post("/registers", verifyToken, registerMarks);
+marksRouter.post("/register", verifyToken, registerMarks);
+marksRouter.get("/get/:schoolID", verifyToken, getAllMarks);
 
 
 // marksRouter.get("/view/:schoolID", verifyToken, getMarkBySchoolID);
