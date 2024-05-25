@@ -153,6 +153,29 @@ export const deleteMarks = async (req, res, next) => {
   }
    
 };
+
+
+export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
+  const { schoolID, studentID, grade, term } = req.params;
+  try {
+    const marks = await prisma.marks.findMany({
+      where: {
+        AND: [{ schoolID: schoolID }, { studentID: studentID }, { grade: grade }, { term: term }],
+      },
+    });
+    if (marks.length === 0) {
+      next(errorHandler(401, "Marks not found"));
+    } else {
+      return res.status(201).json({
+        message: "Marks details Fetched",
+        marksDetails: marks,
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+  
+}
 // export const getAllSchoolMarks = async (req, res, next) => {
 //   try {
 //     const marks = await Marks.find();

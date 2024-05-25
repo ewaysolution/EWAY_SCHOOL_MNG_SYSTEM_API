@@ -92,6 +92,29 @@ export const getSchools = async (req, res, next) => {
   }
 };
 
+
+export const getSchoolBySchoolID = async (req, res, next) => {
+  const { schoolID } = req.params;
+
+  try {
+    const school = await prisma.school.findUnique({
+      where: {
+        schoolID: schoolID,
+      },
+      include: {
+        contact: true,
+      },
+    });
+
+    if (!school) {
+      // Assuming errorHandler is defined elsewhere and it correctly creates an error object
+      return next(errorHandler(401, "School Not Found"));
+    }
+    res.status(200).json(school);
+  } catch (error) {
+    next(error);
+  }
+}
 export const UpdateSchoolBySchoolID = async (req, res, next) => {
   const { schoolID } = req.params;
   const { type, name, password, studentCount, avatar, contact, zone } =
@@ -125,6 +148,7 @@ export const UpdateSchoolBySchoolID = async (req, res, next) => {
     next(error);
   }
 };
+
 
 // export const deleteSchool = async (req, res, next) => {
 //   const { schoolID } = req.params;
