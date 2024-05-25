@@ -79,24 +79,25 @@ export const registerMarks = async (req, res, next) => {
 };
 
 export const getAllMarks = async (req, res, next) => {
- const { schoolID } = req.params;
+  const { schoolID } = req.params;
   try {
-    const marks = await prisma.marks.findMany(
-      {
-        where: {
-          schoolID: schoolID
-        }
-      }
-    );
+    const marks = await prisma.marks.findMany({
+      where: {
+        schoolID: schoolID,
+      },
+      include: {
+        student: true,
+      },
+      
+    });
     return res.status(201).json({
       message: "All school student marks details Fetched",
       studentMarksDetails: marks,
     });
-  }
- catch (error) {
+  } catch (error) {
     next(error);
-}
-}
+  }
+};
 // export const getAllSchoolMarks = async (req, res, next) => {
 //   try {
 //     const marks = await Marks.find();
