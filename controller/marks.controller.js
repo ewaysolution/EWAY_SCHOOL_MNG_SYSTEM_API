@@ -88,7 +88,6 @@ export const getAllMarks = async (req, res, next) => {
       include: {
         student: true,
       },
-      
     });
     return res.status(201).json({
       message: "All school student marks details Fetched",
@@ -97,6 +96,62 @@ export const getAllMarks = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+export const updateMarks = async (req, res, next) => {
+  console.log(req.params);
+  const { schoolID, studentID, id } = req.params;
+  const { subjectMarks, term, stream, grade, classType } = req.body;
+  try {
+    const existingMarks = await prisma.marks.findMany({
+      where: {
+        AND: [{ schoolID: schoolID }, { studentID: studentID }, { id: id }],
+      },
+    });
+    if (existingMarks.length === 0) {
+      next(errorHandler(401, "Marks not found"));
+    } else {
+      const updatedMarks = await prisma.marks.updateMany({
+        where: {
+          AND: [{ schoolID: schoolID }, { id: id }, { studentID: studentID }],
+        },
+        data: req.body,
+      });
+      res.status(201).json({
+        message: "Marks updated successfully",
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
+export const deleteMarks = async (req, res, next) => {
+  const { schoolID, studentID, id } = req.params;
+  try {
+    const existingMarks = await prisma.marks.findMany({
+      where: {
+        AND: [{ schoolID: schoolID }, { studentID: studentID }, { id: id }],
+      },
+    });
+    if (existingMarks.length === 0) {
+      next(errorHandler(401, "Marks not found"));
+    }
+
+    const deletedMarks = await prisma.marks.deleteMany({
+      where: {
+        AND: [{ schoolID: schoolID }, { id: id }, { studentID: studentID }],
+      },
+    });
+    res.status(201).json({
+      message: "Marks deleted successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+   
 };
 // export const getAllSchoolMarks = async (req, res, next) => {
 //   try {
