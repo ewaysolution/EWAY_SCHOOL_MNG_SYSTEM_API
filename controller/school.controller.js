@@ -92,7 +92,6 @@ export const getSchools = async (req, res, next) => {
   }
 };
 
-
 export const getSchoolBySchoolID = async (req, res, next) => {
   const { schoolID } = req.params;
 
@@ -101,8 +100,19 @@ export const getSchoolBySchoolID = async (req, res, next) => {
       where: {
         schoolID: schoolID,
       },
-      include: {
-        contact: true,
+      select: {
+        schoolID: true,
+        name: true,
+        type: true,
+        studentCount: true,
+        avatar: true,
+        contact: {
+          select: {
+            email: true,
+            address: true,
+            phone: true,
+          },
+        },
       },
     });
 
@@ -114,7 +124,7 @@ export const getSchoolBySchoolID = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-}
+};
 export const UpdateSchoolBySchoolID = async (req, res, next) => {
   const { schoolID } = req.params;
   const { type, name, password, studentCount, avatar, contact, zone } =
@@ -148,7 +158,6 @@ export const UpdateSchoolBySchoolID = async (req, res, next) => {
     next(error);
   }
 };
-
 
 // export const deleteSchool = async (req, res, next) => {
 //   const { schoolID } = req.params;

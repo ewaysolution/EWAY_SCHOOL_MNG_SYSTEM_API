@@ -26,6 +26,8 @@ model School {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   contact           ContactDetails?
+
+  Marks Marks[]
 }
 
 model ContactDetails {
@@ -93,8 +95,8 @@ model SubjectTaken {
 
 // Define the Student model
 model Student {
-  studentID          String   @id @map("_id")
-  admissionNo        String   @unique
+  studentID          String  @id @map("_id")
+  admissionNo        String  @unique
   avatar             String?
   medium             String
   initial            String
@@ -105,35 +107,40 @@ model Student {
   DOB                String?
   gender             String?
   religion           String?
-  email              String?  @unique
+  email              String? @unique
   contactNo          String?
   guardianContactNo  String?
   permanentAddress   String?
   residentialAddress String?
-  NIC                String?  @unique
+  NIC                String? @unique
   schoolID           String
   shortBIO           String?
 
-  active             Boolean  @default(true)
-  createdBy          String
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  marks              Marks[]
+  active    Boolean  @default(true)
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  marks     Marks[]
 }
 
 model Marks {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  schoolID       String
-  term           String
-  grade          String
-  stream         String?
-  classType      String?
-  subjectMarks   Json[]
-  active         Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  student        Student  @relation(fields: [studentID], references: [studentID])
-  studentID      String
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  term         String
+  grade        String
+  stream       String?
+  classType    String?
+  subjectMarks Json[]
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student   Student @relation(fields: [studentID], references: [studentID])
+  studentID String
+
+  school   School @relation(fields: [schoolID], references: [schoolID])
+  schoolID String
+
   createdBy      String
   lastModifiedBy String
 }

@@ -126,8 +126,6 @@ export const updateMarks = async (req, res, next) => {
   }
 };
 
-
-
 export const deleteMarks = async (req, res, next) => {
   const { schoolID, studentID, id } = req.params;
   try {
@@ -151,31 +149,69 @@ export const deleteMarks = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-   
 };
-
 
 export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
   const { schoolID, studentID, grade, term } = req.params;
   try {
     const marks = await prisma.marks.findMany({
       where: {
-        AND: [{ schoolID: schoolID }, { studentID: studentID }, { grade: grade }, { term: term }],
+        AND: [
+          { schoolID: schoolID },
+          { studentID: studentID },
+          { grade: grade },
+          { term: term },
+        ],
+      },
+      select: {
+        subjectMarks: true,
+        term: true,
+        stream: true,
+        grade: true,
+        classType: true,
+        schoolID: true,
+        studentID: true,
+        school: {
+          select: {
+            name: true,
+            avatar: true,
+            contact: { select: { phone: true, email: true } },
+          },
+        },
+        student: { select: { fullName: true, avatar: true } },
       },
     });
-    if (marks.length === 0) {
-      next(errorHandler(401, "Marks not found"));
-    } else {
-      return res.status(201).json({
-        message: "Marks details Fetched",
-        marksDetails: marks,
+
+    const subjectDetails = await prisma.subject.findMany();
+
+    // Enrich subjectMarks with subject names
+    const enrichedMarks = marks.map((mark) => {
+      const enrichedSubjectMarks = mark.subjectMarks.map((subjectMark) => {
+        const subjectDetail = subjectDetails.find(
+          (detail) => detail.subjectID === subjectMark.subjectID
+        );
+        return {
+          ...subjectMark,
+          subjectName: subjectDetail ? subjectDetail.name : "Unknown",
+        };
       });
+      return {
+        ...mark,
+        subjectMarks: enrichedSubjectMarks,
+      };
+    });
+
+    if (enrichedMarks.length === 0) {
+      next(errorHandler(401, "Marks not found"));
     }
+    return res.status(200).json({
+      message: "Marks details fetched",
+      marksDetails: enrichedMarks,
+    });
   } catch (error) {
     next(error);
   }
-  
-}
+};
 // export const getAllSchoolMarks = async (req, res, next) => {
 //   try {
 //     const marks = await Marks.find();
