@@ -125,6 +125,44 @@ export const getSchoolBySchoolID = async (req, res, next) => {
     next(error);
   }
 };
+
+
+export const getSchoolByApiKey = async (req, res, next) => {
+  const { apiKey } = req.params;
+
+  try {
+    const school = await prisma.school.findUnique({
+      where: {
+        apiKey: apiKey,
+      },
+      select: {
+        schoolID: true,
+        name: true,
+        type: true,
+        studentCount: true,
+        avatar: true,
+        apiKey: true,
+        contact: {
+          select: {
+            email: true,
+            address: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    if (!school) {
+      // Assuming errorHandler is defined elsewhere and it correctly creates an error object
+      return next(errorHandler(401, "School Not Found"));
+    }
+    res.status(200).json(school);
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 export const UpdateSchoolBySchoolID = async (req, res, next) => {
   const { schoolID } = req.params;
   const { type, name, password, studentCount, avatar, contact, zone } =
