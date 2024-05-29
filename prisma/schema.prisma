@@ -12,9 +12,10 @@ datasource db {
 model School {
   schoolID          String          @id @map("_id")
   type              String
-  name              String
+  name              String 
   password          String
   zone              String?
+  site              String?
   studentCount      Int?
   apiKey            String          @unique
   userType          String          @default("Admin")

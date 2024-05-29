@@ -3,32 +3,39 @@ import { PrismaClient } from "@prisma/client";
 import { errorHandler } from "../util/error.js";
 const prisma = new PrismaClient();
 export const subjectRegister = async (req, res, next) => {
-  const { subjectID, name, grade } = req.body;
+  const subjects = req.body; // Assuming the request body contains an array of subjects
 
   try {
-    const existingSubject = await prisma.Subject.findMany({
-      where: {
-        subjectID: subjectID,
-      },
-    });
+    for (const subject of subjects) {
+      const { subjectID, name, grade } = subject;
 
-    // If email or contact already exists, return an error
-    if (existingSubject.length > 0) {
-      res.status(400).json({
-        success: false,
-        message: "Subject already exists",
+      const existingSubject = await prisma.Subject.findUnique({
+        where: {
+          subjectID: subjectID,
+        },
       });
-      return;
-    }
 
-    console.log(req.body);
-    const subjectDetails = await prisma.Subject.create({
-      data: req.body,
-    });
+      // If subject already exists, return an error
+      if (existingSubject) {
+        return res.status(400).json({
+          success: false,
+          message: `Subject with ID ${subjectID} already exists`,
+        });
+      }
+
+   
+      await prisma.Subject.create({
+        data: {
+          subjectID,
+          name,
+          grade,
+        },
+      });
+    }
 
     res.status(200).json({
       success: true,
-      message: "Subject registered successfully",
+      message: "Subjects registered successfully",
     });
   } catch (error) {
     next(error);

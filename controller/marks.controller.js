@@ -18,6 +18,21 @@ export const registerMarks = async (req, res, next) => {
   } = req.body;
 
   try {
+    // Check for duplicate subject IDs in the provided subjectMarks array
+    const uniqueSubjectIDs = new Set();
+    for (const subjectMark of subjectMarks) {
+      if (uniqueSubjectIDs.has(subjectMark.subjectID)) {
+        return next(
+          errorHandler(
+            400,
+            `Duplicate subject ID found: ${subjectMark.subjectID}`
+          )
+        );
+      }
+      uniqueSubjectIDs.add(subjectMark.subjectID);
+    }
+    // ----------------------
+
     const marksExist = await prisma.marks.findMany({
       where: {
         AND: [
@@ -31,27 +46,7 @@ export const registerMarks = async (req, res, next) => {
       },
     });
 
-    const subjectExists = [];
-    marksExist.forEach((marks) => {
-      marks.subjectMarks.forEach((subjectMark) => {
-        // Check if the subject mark exists in the provided subjectMarks array
-        const foundSubject = subjectMarks.find(
-          (mark) => mark.subjectID === subjectMark.subjectID
-        );
-        if (foundSubject) {
-          subjectExists.push(foundSubject.subjectID); // Push the subject ID to the subjectExists array
-        }
-      });
-    });
-
-    if (marksExist.length > 0 && subjectExists.length > 0) {
-      next(
-        errorHandler(
-          401,
-          `Following student marks ${subjectExists} already Exist`
-        )
-      );
-    } else if (marksExist.length > 0) {
+    if (marksExist.length > 0) {
       next(errorHandler(401, `Student marks already exist`));
     } else {
       const newMarks = await prisma.marks.create({
@@ -154,14 +149,10 @@ export const deleteMarks = async (req, res, next) => {
 export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
   const { schoolID, studentID, grade, term } = req.params;
   try {
-    const marks = await prisma.marks.findMany({
+    // Find all marks for the given schoolID, grade, and term
+    const AllMarks = await prisma.marks.findMany({
       where: {
-        AND: [
-          { schoolID: schoolID },
-          { studentID: studentID },
-          { grade: grade },
-          { term: term },
-        ],
+        AND: [{ schoolID: schoolID }, { grade: grade }, { term: term }],
       },
       select: {
         subjectMarks: true,
@@ -182,10 +173,128 @@ export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
       },
     });
 
+    // Find all subjects
     const subjectDetails = await prisma.subject.findMany();
 
     // Enrich subjectMarks with subject names
-    const enrichedMarks = marks.map((mark) => {
+    const enrichedMarks = AllMarks.map((mark) => {
+      const enrichedSubjectMarks = mark.subjectMarks.map((subjectMark) => {
+        const subjectDetail = subjectDetails.find(
+          (detail) => detail.subjectID === subjectMark.subjectID
+        );
+        return {
+          ...subjectMark,
+          subjectName: subjectDetail ? subjectDetail.name : "Unknown",
+        };
+      });
+      return {
+        ...mark,
+        subjectMarks: enrichedSubjectMarks,
+        TotalMarks: enrichedSubjectMarks.reduce(
+          (total, subjectMark) => total + subjectMark.marks,
+          0
+        ),
+        AverageMarks: parseFloat(
+          (
+            enrichedSubjectMarks.reduce(
+              (total, subjectMark) => total + subjectMark.marks,
+              0
+            ) / enrichedSubjectMarks.length
+          ).toFixed(2)
+        ),
+      };
+    });
+
+    // Sort students by TotalMarks in descending order
+    enrichedMarks.sort((a, b) => b.TotalMarks - a.TotalMarks);
+
+    // Assign ranks to students
+    let currentRank = 1;
+    let previousTotalMarks = null;
+    enrichedMarks.forEach((mark, index) => {
+      if (previousTotalMarks !== mark.TotalMarks) {
+        currentRank = index + 1; // Assign current index + 1 as rank
+        previousTotalMarks = mark.TotalMarks;
+      }
+      mark.Rank = currentRank; // Add rank to the student’s mark object
+    });
+
+    // Filter the student(s) with rank 1
+    const RankOneStudents = enrichedMarks.filter((mark) => mark.Rank === 1);
+    const SearchedStudent = enrichedMarks.filter(
+      (student) => student.studentID === studentID
+    );
+
+    if (SearchedStudent.length === 0) {
+      next(errorHandler(401, "Marks not found"));
+    }
+    return res.status(200).json({
+      message: "Marks details fetched",
+      marksDetails: { SearchedStudent, RankOneStudents },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMarksByGradeTerm = async (req, res, next) => {
+  const { schoolID, grade, term } = req.params;
+  try {
+    const marks = await prisma.marks.findMany({
+      where: {
+        AND: [{ schoolID: schoolID }, { grade: grade }, { term: term }],
+      },
+      select: {
+        subjectMarks: true,
+        term: true,
+        stream: true,
+        grade: true,
+        classType: true,
+        schoolID: true,
+        studentID: true,
+        school: {
+          select: {
+            name: true,
+            avatar: true,
+            contact: { select: { phone: true, email: true } },
+          },
+        },
+        student: { select: { fullName: true, avatar: true } },
+      },
+    });
+
+    if (marks.length === 0) {
+      next(errorHandler(401, "Marks not found"));
+    }
+
+    // Calculate total marks, average marks, and place for each student
+    const studentMarksDetails = marks.map((mark) => {
+      const totalMarks = mark.subjectMarks.reduce(
+        (total, subject) => total + subject.marks,
+        0
+      );
+      const averageMarks = parseFloat(
+        (totalMarks / mark.subjectMarks.length).toFixed(2)
+      );
+
+      return {
+        ...mark,
+        totalMarks,
+        averageMarks,
+      };
+    });
+
+    // Sort students by total marks to assign places
+    studentMarksDetails.sort((a, b) => b.totalMarks - a.totalMarks);
+    studentMarksDetails.forEach((student, index) => {
+      student.place = index + 1;
+    });
+
+    // Fetch subject details
+    const subjectDetails = await prisma.subject.findMany();
+
+    // Enrich the subject marks with subject names
+    const enrichedMarks = studentMarksDetails.map((mark) => {
       const enrichedSubjectMarks = mark.subjectMarks.map((subjectMark) => {
         const subjectDetail = subjectDetails.find(
           (detail) => detail.subjectID === subjectMark.subjectID
@@ -201,17 +310,15 @@ export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
       };
     });
 
-    if (enrichedMarks.length === 0) {
-      next(errorHandler(401, "Marks not found"));
-    }
-    return res.status(200).json({
-      message: "Marks details fetched",
-      marksDetails: enrichedMarks,
+    return res.status(201).json({
+      message: "Student marks details Fetched",
+      studentMarksDetails: enrichedMarks,
     });
   } catch (error) {
     next(error);
   }
 };
+
 // export const getAllSchoolMarks = async (req, res, next) => {
 //   try {
 //     const marks = await Marks.find();

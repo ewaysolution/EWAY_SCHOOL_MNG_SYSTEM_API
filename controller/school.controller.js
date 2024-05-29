@@ -5,7 +5,7 @@ import { generateApiKey } from "generate-api-key";
 const prisma = new PrismaClient();
 
 export const signupSchool = async (req, res, next) => {
-  const { schoolID, type, name, password, contact } = req.body;
+  const { schoolID, type, name, password, contact,avatar } = req.body;
   // console.log(req.body);
   try {
     // Check if email already exists
@@ -51,6 +51,7 @@ export const signupSchool = async (req, res, next) => {
         name: name,
         password: hashedPassword,
         apiKey: apiKey,
+        avatar:avatar,
       },
     });
 
