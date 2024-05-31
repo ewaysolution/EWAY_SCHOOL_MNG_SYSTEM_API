@@ -9,6 +9,7 @@ import subjectRouter from "./routes/subject.route.js";
 import studentRouter from "./routes/student.route.js";
 import authRouter from "./routes/auth.route.js";
 import marksRouter from "./routes/marks.route.js";
+import gradeRouter from "./routes/grade.route.js";
 
 
 dotenv.config();
@@ -29,6 +30,7 @@ app.use("/api/v1/school/teacher", teacherRouter);
 app.use("/api/v1/school/subject", subjectRouter);
 app.use("/api/v1/school/student", studentRouter);
 app.use("/api/v1/school/student/marks", marksRouter);
+app.use("/api/v1/school/grade", gradeRouter);
 
 
 

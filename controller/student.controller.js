@@ -80,15 +80,46 @@ export const getAllStudentBySchoolID = async (req, res, next) => {
         marks: true,
       },
     });
+    const grade = await prisma.grade.findMany();
+    const studentGrade = await prisma.studentGrade.findMany();
 
-    if (StudentsDetails.length === 0) {
-      next(errorHandler(401, "Students Not Found in this school"));
-    } else {
-      res.status(201).json({
-        message: "Students Details Fetched",
-        StudentsDetails: StudentsDetails,
-      });
-    }
+    const enrichedGradeData = grade.map((gradeItem) => {
+      const enrichedGrade = studentGrade.find(
+        (stdGrade) => stdGrade.gradeID === gradeItem.id
+      );
+      const gradeLevel = enrichedGrade ? gradeItem.gradeLevel : null;
+
+      return {
+        ...gradeItem,
+        gradeLevel: gradeLevel,
+      };
+    });
+
+    const enrichedStudentData = StudentsDetails.map((student) => {
+      const gradeDetails = studentGrade
+        .filter((stdGrade) => stdGrade.studentID === student.studentID)
+        .map((Student) => {
+          const gradeDetail = enrichedGradeData.find(
+            (grade) => grade.id === Student.gradeID
+          );
+          return gradeDetail ? gradeDetail.gradeLevel : "Unknown";
+        });
+
+      const highestGrade =
+        gradeDetails.length > 0
+          ? Math.max(...gradeDetails.map(Number)) //change array to single and convert to number and find max
+          : "Unknown";
+
+      return {
+        ...student,
+        grade: highestGrade,
+      };
+    });
+
+    res.status(200).json({
+      message: "Students Details Fetched",
+      StudentsDetails: enrichedStudentData,
+    });
   } catch (error) {
     next(error.message);
   }
@@ -96,7 +127,7 @@ export const getAllStudentBySchoolID = async (req, res, next) => {
 
 export const updateStudentByStudentIDSchoolID = async (req, res, next) => {
   const { studentID, schoolID } = req.params;
-console.log(req.body)
+  console.log(req.body);
   try {
     const StudentDetails = await prisma.student.update({
       where: {
@@ -108,13 +139,11 @@ console.log(req.body)
       },
     });
 
-   
     res.status(201).json({
       message: "Student Details Updated Successfully",
       StudentsDetails: StudentDetails,
     });
   } catch (error) {
-
     if (error.code === "P2025") {
       // Handle the case where the record to update is not found
       res.status(404).json({
@@ -124,8 +153,6 @@ console.log(req.body)
       return null; // Return null to prevent Prisma from retrying
     }
     next(error);
-
-    
   }
 };
 

@@ -12,7 +12,7 @@ datasource db {
 model School {
   schoolID          String          @id @map("_id")
   type              String
-  name              String 
+  name              String
   password          String
   zone              String?
   site              String?
@@ -27,8 +27,8 @@ model School {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   contact           ContactDetails?
-
-  Marks Marks[]
+  grade             StudentGrade[]
+  Marks             Marks[]
 }
 
 model ContactDetails {
@@ -121,14 +121,16 @@ model Student {
   createdBy String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  marks     Marks[]
+
+  grade StudentGrade[]
+  marks Marks[]
 }
 
 model Marks {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  term         String
-  grade        String
+  term String
+
   stream       String?
   classType    String?
   subjectMarks Json[]
@@ -142,8 +144,34 @@ model Marks {
   school   School @relation(fields: [schoolID], references: [schoolID])
   schoolID String
 
+  grade   Grade  @relation(fields: [gradeID], references: [id])
+  gradeID String @db.ObjectId
+
   createdBy      String
   lastModifiedBy String
+}
+
+model Grade {
+  id         String         @id @default(auto()) @map("_id") @db.ObjectId
+  gradeLevel String         @unique
+  active     Boolean        @default(true)
+  grade      StudentGrade[]
+  marks      Marks[]
+}
+
+model StudentGrade {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  academicYear String
+
+  grade   Grade  @relation(fields: [gradeID], references: [id])
+  gradeID String @map("gradeID") @db.ObjectId
+
+  student   Student @relation(fields: [studentID], references: [studentID])
+  studentID String  @map("studentID")
+
+  school   School @relation(fields: [schoolID], references: [schoolID])
+  schoolID String
 }
 
 // Define the teacher model------------------->

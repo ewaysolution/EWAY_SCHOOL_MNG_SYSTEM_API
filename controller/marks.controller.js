@@ -11,7 +11,7 @@ export const registerMarks = async (req, res, next) => {
     subjectMarks,
     term,
     stream,
-    grade,
+    gradeID,
     classType,
     createdBy,
     lastModifiedBy,
@@ -40,7 +40,7 @@ export const registerMarks = async (req, res, next) => {
           { studentID: studentID },
           { term: term },
           { stream: stream },
-          { grade: grade },
+          { gradeID: gradeID },
           { classType: classType },
         ],
       },
@@ -56,13 +56,13 @@ export const registerMarks = async (req, res, next) => {
           subjectMarks,
           term,
           stream,
-          grade,
+          gradeID,
           classType,
           createdBy,
           lastModifiedBy,
         },
       });
-      //   res.status(201).json(newSchool);
+
       res.status(201).json({
         message: "Student Marks Added Successfully",
         subjectMarks: newMarks,
@@ -81,9 +81,16 @@ export const getAllMarks = async (req, res, next) => {
         schoolID: schoolID,
       },
       include: {
+        grade: true,
         student: true,
       },
     });
+
+    // // Modify the structure of each mark object in place
+    // marks.forEach((mark) => {
+    //   mark.grade = mark.grade.gradeLevel; // Replacing grade object with gradeLevel string
+    // });
+
     return res.status(201).json({
       message: "All school student marks details Fetched",
       studentMarksDetails: marks,
@@ -94,9 +101,9 @@ export const getAllMarks = async (req, res, next) => {
 };
 
 export const updateMarks = async (req, res, next) => {
-  console.log(req.params);
   const { schoolID, studentID, id } = req.params;
-  const { subjectMarks, term, stream, grade, classType } = req.body;
+
+  const { subjectMarks, term, stream, gradeID, classType } = req.body;
   try {
     const existingMarks = await prisma.marks.findMany({
       where: {
@@ -149,10 +156,20 @@ export const deleteMarks = async (req, res, next) => {
 export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
   const { schoolID, studentID, grade, term } = req.params;
   try {
-    // Find all marks for the given schoolID, grade, and term
+    const gradeDetails = await prisma.grade.findFirst({
+      where: {
+        gradeLevel: grade,
+      },
+    });
+
+    // // Find all marks for the given schoolID, grade, and term
     const AllMarks = await prisma.marks.findMany({
       where: {
-        AND: [{ schoolID: schoolID }, { grade: grade }, { term: term }],
+        AND: [
+          { schoolID: schoolID },
+          { gradeID: gradeDetails.id },
+          { term: term },
+        ],
       },
       select: {
         subjectMarks: true,
@@ -173,7 +190,7 @@ export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
       },
     });
 
-    // Find all subjects
+    // // Find all subjects
     const subjectDetails = await prisma.subject.findMany();
 
     // Enrich subjectMarks with subject names
