@@ -121,25 +121,77 @@ export const updateMarks = async (req, res, next) => {
   const { schoolID, studentID, id } = req.params;
 
   const { subjectMarks, term, stream, gradeID, classType } = req.body;
+
   try {
-    const existingMarks = await prisma.marks.findMany({
+    const StudentGradeID = await prisma.studentGrade.findFirst({
       where: {
-        AND: [{ schoolID: schoolID }, { studentID: studentID }, { id: id }],
+        AND: [
+          { schoolID: schoolID },
+          { studentID: studentID },
+          { gradeID: gradeID },
+        ],
+      },
+      select: {
+        id: true,
       },
     });
+    console.log(StudentGradeID);
+    if (!StudentGradeID) {
+      next(errorHandler(401, `Student not found in the selected grade.`));
+    }
+
+  // Check for  marks ID available
+    const existingMarks = await prisma.marks.findMany({
+      where: {
+        AND: [
+          { schoolID: schoolID },
+          { studentID: studentID },
+          { id: id }
+        ],
+      },
+    });
+    
     if (existingMarks.length === 0) {
       next(errorHandler(401, "Marks not found"));
-    } else {
-      const updatedMarks = await prisma.marks.updateMany({
-        where: {
-          AND: [{ schoolID: schoolID }, { id: id }, { studentID: studentID }],
-        },
-        data: req.body,
-      });
-      res.status(201).json({
-        message: "Marks updated successfully",
-      });
     }
+
+
+ // Check for duplicate Marks
+    const marksExist = await prisma.marks.findFirst({
+      where: {
+        AND: [
+          { schoolID: schoolID },
+          { studentID: studentID },
+          { term: term },
+          { gradeID: gradeID },
+          { studentGradeID: StudentGradeID.id },
+        ],
+      },
+    })
+   
+    if (marksExist) {
+      next(errorHandler(401, "The grade marks already exist"));
+    }
+
+    const updatedMarks = await prisma.marks.updateMany({
+      where: {
+        AND: [{ schoolID: schoolID }, { id: id }, { studentID: studentID },
+        { studentGradeID: StudentGradeID.id }, { gradeID: gradeID }],
+      },
+      data: {
+        schoolID,
+        studentID,
+        subjectMarks,
+        term,
+        stream,
+        gradeID,
+        studentGradeID: StudentGradeID.id,
+        classType,
+      },
+    });
+    res.status(201).json({
+      message: "Marks updated successfully",
+    });
   } catch (error) {
     next(error);
   }
@@ -179,7 +231,7 @@ export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
       },
     });
 
-// Find the academic year for the given schoolID and grade and studentID
+    // Find the academic year for the given schoolID and grade and studentID
     const FindAcademicYear = await prisma.studentGrade.findFirst({
       where: {
         AND: [
