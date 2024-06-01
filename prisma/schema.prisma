@@ -147,16 +147,19 @@ model Marks {
   grade   Grade  @relation(fields: [gradeID], references: [id])
   gradeID String @db.ObjectId
 
+  studentGrade   StudentGrade @relation(fields: [studentGradeID], references: [id])
+  studentGradeID String       @db.ObjectId
+
   createdBy      String
   lastModifiedBy String
 }
 
 model Grade {
-  id         String         @id @default(auto()) @map("_id") @db.ObjectId
-  gradeLevel String         @unique
-  active     Boolean        @default(true)
-  grade      StudentGrade[]
-  marks      Marks[]
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  gradeLevel    String         @unique
+  active        Boolean        @default(true)
+  promotedGrade StudentGrade[]
+  marks         Marks[]
 }
 
 model StudentGrade {
@@ -172,6 +175,8 @@ model StudentGrade {
 
   school   School @relation(fields: [schoolID], references: [schoolID])
   schoolID String
+
+  Marks Marks[]
 }
 
 // Define the teacher model------------------->

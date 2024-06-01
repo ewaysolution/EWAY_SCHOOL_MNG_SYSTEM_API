@@ -78,6 +78,7 @@ export const getAllStudentBySchoolID = async (req, res, next) => {
 
       include: {
         marks: true,
+        grade: true,
       },
     });
     const grade = await prisma.grade.findMany();
