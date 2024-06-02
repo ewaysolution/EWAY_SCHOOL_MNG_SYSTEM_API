@@ -53,24 +53,58 @@ export const getAllGrade = async (req, res, next) => {
 
 export const regStudentPromotion = async (req, res, next) => {
   const StudentPromotionData = req.body; // Assuming the request body contains an array of grades
+ 
+  if (StudentPromotionData.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Please select the students to promote",
+    });
+  }
 
   try {
-    // Iterate over the provided grades and check if they already exist
+    const findGradeID = await prisma.grade.findFirst({
+      where: {
+        id: StudentPromotionData.gradeID,
+      },
+    });
+
+    if (!findGradeID) {
+      return res.status(400).json({
+        success: false,
+        message: "Grade ID not found",
+      });
+    }
+
+    const findStudentID = await prisma.student.findFirst({
+      where: {
+        studentID: StudentPromotionData.studentID,
+      },
+    });
+    console.log(StudentPromotionData.studentID);
+
+    if (!findStudentID) {
+      return res.status(400).json({
+        success: false,
+        message: "Student ID not found",
+      });
+    }
+
+    // // Iterate over the provided grades and check if they already exist
     const existingGrades = await prisma.StudentGrade.findMany({
       where: {
         AND: [
           {
             gradeID: {
-              in: StudentPromotionData.map((data) => data.gradeID),
+              in: StudentPromotionData.map((grade) => grade.gradeID),
             },
             studentID: {
-              in: StudentPromotionData.map((data) => data.studentID),
+              in: StudentPromotionData.map((grade) => grade.studentID),
             },
             academicYear: {
-              in: StudentPromotionData.map((data) => data.academicYear),
+              in: StudentPromotionData.map((grade) => grade.academicYear),
             },
             schoolID: {
-              in: StudentPromotionData.map((data) => data.schoolID),
+              in: StudentPromotionData.map((grade) => grade.schoolID),
             },
           },
         ],
@@ -99,9 +133,7 @@ export const regStudentPromotion = async (req, res, next) => {
   }
 };
 
-
 export const getStudentPromotion = async (req, res, next) => {
-
   try {
     const StudentGradeDetails = await prisma.StudentGrade.findMany();
 
@@ -109,7 +141,6 @@ export const getStudentPromotion = async (req, res, next) => {
       message: "StudentGrade Details Fetched",
       StudentGradeDetails: StudentGradeDetails,
     });
-
   } catch (error) {
     next(error);
   }

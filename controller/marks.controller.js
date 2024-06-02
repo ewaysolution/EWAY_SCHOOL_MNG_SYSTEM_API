@@ -140,23 +140,18 @@ export const updateMarks = async (req, res, next) => {
       next(errorHandler(401, `Student not found in the selected grade.`));
     }
 
-  // Check for  marks ID available
+    // Check for  marks ID available
     const existingMarks = await prisma.marks.findMany({
       where: {
-        AND: [
-          { schoolID: schoolID },
-          { studentID: studentID },
-          { id: id }
-        ],
+        AND: [{ schoolID: schoolID }, { studentID: studentID }, { id: id }],
       },
     });
-    
+
     if (existingMarks.length === 0) {
       next(errorHandler(401, "Marks not found"));
     }
 
-
- // Check for duplicate Marks
+    // Check for duplicate Marks
     const marksExist = await prisma.marks.findFirst({
       where: {
         AND: [
@@ -167,16 +162,21 @@ export const updateMarks = async (req, res, next) => {
           { studentGradeID: StudentGradeID.id },
         ],
       },
-    })
-   
+    });
+
     if (marksExist) {
       next(errorHandler(401, "The grade marks already exist"));
     }
 
     const updatedMarks = await prisma.marks.updateMany({
       where: {
-        AND: [{ schoolID: schoolID }, { id: id }, { studentID: studentID },
-        { studentGradeID: StudentGradeID.id }, { gradeID: gradeID }],
+        AND: [
+          { schoolID: schoolID },
+          { id: id },
+          { studentID: studentID },
+          { studentGradeID: StudentGradeID.id },
+          { gradeID: gradeID },
+        ],
       },
       data: {
         schoolID,
@@ -225,11 +225,19 @@ export const deleteMarks = async (req, res, next) => {
 export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
   const { schoolID, studentID, grade, term } = req.params;
   try {
+    // Find the grade details for the given grade
     const gradeDetails = await prisma.grade.findFirst({
       where: {
         gradeLevel: grade,
       },
     });
+
+    if (!gradeDetails) {
+      next(errorHandler(401, "Grade not found"));
+    }
+    // --
+
+
 
     // Find the academic year for the given schoolID and grade and studentID
     const FindAcademicYear = await prisma.studentGrade.findFirst({
@@ -242,6 +250,12 @@ export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
       },
       select: { academicYear: true },
     });
+
+
+    if (!FindAcademicYear) {
+      next(errorHandler(401, "Marks not found")); // student not found in the selected grade
+    }
+      //
 
     // // Find all marks for the given schoolID, grade, and term and academicYear
     const AllMarks = await prisma.marks.findMany({
@@ -272,6 +286,11 @@ export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
         student: { select: { fullName: true, avatar: true } },
       },
     });
+
+    if (AllMarks.length === 0) {
+      next(errorHandler(401, "Marks not found"));
+    }    
+    //--
 
     // // Find all subjects
     const subjectDetails = await prisma.subject.findMany();
