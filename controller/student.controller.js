@@ -6,7 +6,8 @@ const prisma = new PrismaClient();
 
 // register student
 export const registerStudent = async (req, res, next) => {
-  let studentsData = req.body;
+  const studentsData = req.body;
+ 
 
   try {
     const existingStudents = await prisma.student.findMany({
@@ -97,23 +98,37 @@ export const getAllStudentBySchoolID = async (req, res, next) => {
     });
 
     const enrichedStudentData = StudentsDetails.map((student) => {
-      const gradeDetails = studentGrade
-        .filter((stdGrade) => stdGrade.studentID === student.studentID)
-        .map((Student) => {
-          const gradeDetail = enrichedGradeData.find(
-            (grade) => grade.id === Student.gradeID
-          );
-          return gradeDetail ? gradeDetail.gradeLevel : "Unknown";
-        });
+      // Step 1: Filter grades by studentID
+      const studentGrades = studentGrade.filter(
+        (stdGrade) => stdGrade.studentID === student.studentID
+      );
 
-      const highestGrade =
-        gradeDetails.length > 0
-          ? Math.max(...gradeDetails.map(Number)) //change array to single and convert to number and find max
-          : "Unknown";
+      // Step 2: Enrich grades with grade details
+      const enrichedGrades = studentGrades.map((grade) => {
+        const gradeDetail = enrichedGradeData.find(
+          (detail) => detail.id === grade.gradeID
+        );
+        return {
+          ...grade,
+          gradeLevel: gradeDetail ? Number(gradeDetail.gradeLevel) : -1,
+          academicYear: Number(grade.academicYear), // Ensure academicYear is a number
+        };
+      });
 
+      console.log(enrichedGrades);
+
+      // Step 3: Find the highest grade level
+      const highestGrade = enrichedGrades.reduce(
+        (max, grade) => (grade.gradeLevel > max.gradeLevel ? grade : max),
+        { gradeLevel: -1, academicYear: "Unknown" }
+      );
+
+      // Step 4: Return the enriched student data
       return {
         ...student,
-        grade: highestGrade,
+        grade:
+          highestGrade.gradeLevel === -1 ? "Unknown" : highestGrade.gradeLevel,
+        academicYear: highestGrade.academicYear,
       };
     });
 
