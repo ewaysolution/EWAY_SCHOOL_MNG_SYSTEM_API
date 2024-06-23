@@ -13,14 +13,33 @@ export const schoolLogin = async (req, res, next) => {
         schoolID: schoolID,
       },
       // Foreign table include
-      include: {
-        contact: true, // Include the associated ContactDetails
+      select: {
+        schoolID: true,
+        apiKey: true,
+        avatar: true,
+        site: true,
+        studentCount: true,
+        name: true,
+        userType: true,
+        avatar: true,
+        apiKey: true,
+        password: true,
+        zone: true,
+        contact: {
+          select: {
+            email: true,
+            address: true,
+            phone: true,
+          },
+        },
       },
     });
 
     if (school) {
       const isMatch = bcryptjs.compareSync(password, school.password);
       if (isMatch) {
+        const { password, ...updatedSchool } = school;
+
         const token = jwt.sign(
           {
             apiKey: school.apiKey,
@@ -41,7 +60,7 @@ export const schoolLogin = async (req, res, next) => {
           .status(200)
           .json({
             Message: "Successfully Login",
-            SchoolDetails: school,
+            SchoolDetails: updatedSchool,
             token,
           });
       } else {
@@ -62,6 +81,37 @@ export const teacherLogin = async (req, res, next) => {
       where: {
         teacherID: teacherID,
       },
+      // Foreign table include
+      select: {
+        teacherID: true,
+        password: true,
+        avatar: true,
+        medium: true,
+        initial: true,
+        fname: true,
+        lname: true,
+        fullName: true,
+        gender: true,
+        religion: true,
+        DOB: true,
+        NIC: true,
+        marriageStatus: true,
+        residentialAddress: true,
+        permanentAddress: true,
+        mobile: true,
+        home: true,
+        email: true,
+        userType: true,
+        shortBIO: true,
+        schoolID: true,
+        school: {
+          select: {
+            name: true,
+            avatar: true,
+            apiKey: true,
+          },
+        },
+      },
     });
 
     if (teacher) {
@@ -76,6 +126,8 @@ export const teacherLogin = async (req, res, next) => {
           //   expiresIn: "30s",
           // }
         );
+        const { password, ...updatedTeacher } = teacher;
+
         return res
           .cookie("token", token, {
             path: "/",
@@ -86,7 +138,7 @@ export const teacherLogin = async (req, res, next) => {
           .status(200)
           .json({
             Message: "Successfully Login",
-            TeacherDetails: teacher,
+            TeacherDetails: updatedTeacher,
             token,
           });
       } else {
@@ -145,45 +197,3 @@ export const studentLogin = async (req, res, next) => {
     next(error);
   }
 };
-
-// export const studentLogin = async (req, res, next) => {
-//   const { studentID, password } = req.body;
-//   try {
-//     const student = await Teacher.findOne({ studentID });
-
-//     if (student) {
-//       const isMatch = bcryptjs.compareSync(password, student.password);
-//       if (isMatch) {
-//         const token = jwt.sign(
-//           {
-//             apiKey: school.apiKey,
-//             email: email,
-//           },
-//           process.env.JWT_SECRET
-//           // {
-//           //   expiresIn: "30s",
-//           // }
-//         );
-//         return res
-//           .cookie("token", token, {
-//             path: "/",
-//             // expires: new Date(Date.now() + 10000 * 30),
-//             httpOnly: true,
-//             sameSite: "lax",
-//           })
-//           .status(200)
-//           .json({
-//             Message: "Successfully Login",
-//             SchoolDetails: school,
-//             token,
-//           });
-//       } else {
-//         return next(errorHandler(401, "School does not exist"));
-//       }
-//     } else {
-//       return next(errorHandler(401, "School does not exist"));
-//     }
-//   } catch (error) {
-//     next(error);
-//   }
-// };

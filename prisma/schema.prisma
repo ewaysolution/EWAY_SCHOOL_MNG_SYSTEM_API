@@ -29,6 +29,7 @@ model School {
   contact           ContactDetails?
   grade             StudentGrade[]
   Marks             Marks[]
+  teacher           Teacher[]
 }
 
 model ContactDetails {
@@ -44,7 +45,7 @@ model ContactDetails {
 
 // Define the teacher model------------------->
 model Teacher {
-  teacherID          String   @id @map("_id")
+  teacherID          String         @id @map("_id")
   password           String
   avatar             String?
   medium             String
@@ -55,29 +56,30 @@ model Teacher {
   gender             String?
   religion           String?
   DOB                String?
-  NIC                String?  @unique
+  NIC                String?        @unique
   marriageStatus     String?
   residentialAddress String?
   permanentAddress   String
   mobile             String
   home               String?
   email              String
-  userType           String   @default("Teacher")
+  userType           String         @default("Teacher")
   shortBIO           String?
-  active             Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  schoolID           String
+  active             Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  subjects           SubjectTaken[]
 
-  subjects SubjectTaken[]
+  school   School @relation(fields: [schoolID], references: [schoolID])
+  schoolID String @unique @map("schoolID")
 }
 
 model Subject {
-  subjectID String  @id @map("_id")
-  name      String
-  grade     String
-  active    Boolean @default(true)
-
+  subjectID    String         @id @map("_id")
+  name         String
+  grade        String
+  active       Boolean        @default(true)
+  category     Int
   subjectTaken SubjectTaken[]
 }
 

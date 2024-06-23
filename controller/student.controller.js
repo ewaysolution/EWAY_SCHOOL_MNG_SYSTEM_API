@@ -20,7 +20,7 @@ export const registerStudent = async (req, res, next) => {
     });
 
     if (existingStudents && existingStudents.length > 0) {
-      next(errorHandler(401, "Students already exist"));
+      return next(errorHandler(401, "Students already exist"));
     } else {
       const hashedPassword = bcryptjs.hashSync(studentsData.password, 10);
 
@@ -56,7 +56,7 @@ export const getStudentByID = async (req, res, next) => {
     });
 
     if (StudentDetails.length === 0) {
-      next(errorHandler(401, "Student Not Found"));
+      return  next(errorHandler(401, "Student Not Found"));
     } else {
       res.status(201).json({
         message: "Student Details Fetched",
@@ -115,7 +115,7 @@ export const getAllStudentBySchoolID = async (req, res, next) => {
         };
       });
 
-      console.log(enrichedGrades);
+      // console.log(enrichedGrades);
 
       // Step 3: Find the highest grade level
       const highestGrade = enrichedGrades.reduce(
@@ -143,7 +143,7 @@ export const getAllStudentBySchoolID = async (req, res, next) => {
 
 export const updateStudentByStudentIDSchoolID = async (req, res, next) => {
   const { studentID, schoolID } = req.params;
-  console.log(req.body);
+  // console.log(req.body);
   try {
     const StudentDetails = await prisma.student.update({
       where: {
@@ -171,68 +171,4 @@ export const updateStudentByStudentIDSchoolID = async (req, res, next) => {
     next(error);
   }
 };
-
-// // get student details
-// export const getStudentDetailsBySchoolIDStudentID = async (req, res, next) => {
-//   const { schoolID, studentID } = req.params;
-
-//   try {
-//     const StudentDetails = await Student.find({
-//       schoolID,
-//       studentID,
-//     });
-//     if (StudentDetails.length === 0) {
-//       next(errorHandler(401, "Student Not Found"));
-//     } else {
-//       res.status(201).json({
-//         message: "Student Details Fetched",
-//         StudentDetails: StudentDetails,
-//       });
-//     }
-//   } catch (error) {
-//     next(error.message);
-//   }
-// };
-
-// // get all student details
-// export const getAllStudentDetails = async (req, res, next) => {
-//   const { schoolID } = req.params;
-
-//   try {
-//     const StudentsDetails = await Student.find({
-//       schoolID: schoolID,
-//     });
-//     if (StudentsDetails.length === 0) {
-//       next(errorHandler(401, "Students Details Not Found"));
-//     } else {
-//       res.status(201).json({
-//         message: "Students Details Fetched",
-//         StudentsDetails,
-//       });
-//     }
-//   } catch (error) {
-//     next(error.message);
-//   }
-// };
-
-// //delete Student  by school id and studentID
-// export const deleteStudent = async (req, res, next) => {
-//   const { schoolID, studentID } = req.params;
-//   // console.log(req.params);
-
-//   try {
-//     const StudentsDetails = await Student.deleteOne({
-//       schoolID,
-//       studentID,
-//     });
-//     if (StudentsDetails.deletedCount === 0) {
-//       next(errorHandler(401, "Student Details Not Found"));
-//     } else {
-//       res.status(201).json({
-//         message: "Student Details Deleted Successfully",
-//       });
-//     }
-//   } catch (error) {
-//     next(error.message);
-//   }
-// };
+ 

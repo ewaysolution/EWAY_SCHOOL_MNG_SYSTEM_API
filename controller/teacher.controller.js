@@ -78,13 +78,44 @@ export const getTeacher = async (req, res, next) => {
       where: {
         teacherID: req.params.teacherID,
       },
-      include: {
-        subjects: true, // Include related SubjectTaken data
-        school: true,
+      select: {
+        teacherID: true,
+        password: true,
+        avatar: true,
+        medium: true,
+        initial: true,
+        fname: true,
+        lname: true,
+        fullName: true,
+        gender: true,
+        religion: true,
+        DOB: true,
+        NIC: true,
+        marriageStatus: true,
+        residentialAddress: true,
+        permanentAddress: true,
+        mobile: true,
+        home: true,
+        email: true,
+        userType: true,
+        shortBIO: true,
+        schoolID: true,
+        school: {
+          select: {
+            name: true,
+            schoolID: true,
+            apiKey: true,
+          },
+        },
+        subjects: true,
       },
+      // include: {
+      //   subjects: true, // Include related SubjectTaken data
+      //   school: true,
+      // },
     });
     if (teacherDetails.length === 0) {
-      next(errorHandler(401, "No teachers registered"));
+      return next(errorHandler(401, "No teachers registered"));
     } else {
       res.status(201).json({
         message: "Get Teacher Details Successfully",
@@ -112,11 +143,7 @@ export const subjectTaken = async (req, res, next) => {
 
     // If email or contact already exists, return an error
     if (subTaken.length > 0) {
-      res.status(400).json({
-        success: false,
-        message: "Subject already assigned to him",
-      });
-      return;
+      return next(errorHandler(401, `Subject already assigned to him`));
     }
 
     const SubjectTakenDetails = await prisma.SubjectTaken.create({
@@ -140,7 +167,7 @@ export const getAllTeacherBySchoolID = async (req, res, next) => {
       },
     });
     if (teachersDetails.length === 0) {
-      next(errorHandler(401, "No teachers registered yet"));
+      return next(errorHandler(401, "No teachers registered yet"));
     } else {
       res.status(201).json({
         message: "Get Teacher Details Successfully",
@@ -161,7 +188,7 @@ export const updateTeacherByTeacherSchoolID = async (req, res, next) => {
         schoolID: schoolID,
       },
 
-      data:  req.body
+      data: req.body,
     });
 
     res.status(201).json({
@@ -179,87 +206,4 @@ export const updateTeacherByTeacherSchoolID = async (req, res, next) => {
     }
     next(error);
   }
-};
-
-// // get all Teacher details
-// export const getAllTeacherDetails = async (req, res, next) => {
-//   const { schoolID } = req.params;
-
-//   try {
-//     const TeacherDetails = await Teacher.find({
-//       schoolID: schoolID,
-//     });
-//     if (TeacherDetails.length === 0) {
-//       next(errorHandler(401, "Teacher Details Not Found"));
-//     } else {
-//       res.status(201).json({
-//         message: "Teacher Details Fetched",
-//         TeacherDetails,
-//       });
-//     }
-//   } catch (error) {
-//     next(error.message);
-//   }
-// };
-
-// // delete Teacher
-// export const deleteTeacher = async (req, res, next) => {
-//   const { schoolID, teacherID } = req.params;
-//   // console.log(req.params);
-
-//   try {
-//     const TeacherDetails = await Teacher.deleteOne({
-//       schoolID,
-//       teacherID,
-//     });
-//     if (TeacherDetails.deletedCount === 0) {
-//       next(errorHandler(401, "Teacher Details Not Found"));
-//     } else {
-//       res.status(201).json({
-//         message: "Teacher Details Deleted Successfully",
-//       });
-//     }
-//   } catch (error) {
-//     next(error.message);
-//   }
-// };
-
-// //
-// export const getTeacherWithSchoolDetails = async (req, res, next) => {
-//   console.log(req.params.teacherID);
-//   try {
-//     const teacherDetails = await Teacher.aggregate([
-//       {
-//         $match: {
-//           teacherID: req.params.teacherID,
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "schools", // Assuming your School collection is named 'schools'
-//           localField: "schoolID",
-//           foreignField: "schoolID",
-//           as: "schoolDetails",
-//         },
-//       },
-//     ]);
-
-//     if (teacherDetails.length === 0) {
-//       return next(errorHandler(401, "Teacher Details Not Found"));
-//     }
-
-//     res.status(201).json({
-//       message: "Teacher Details Fetched",
-//       teacherDetails,
-//     });
-//   } catch (error) {
-//     next(error.message);
-//   }
-// };
-
-// {
-//   "status": "UNAUTHORIZED",
-//   "message": "Full authentication is required to access this resource",
-//   "path": "/gps/rest/v1/transporter/vehicle/",
-//   "code": 401
-// }
+}; 

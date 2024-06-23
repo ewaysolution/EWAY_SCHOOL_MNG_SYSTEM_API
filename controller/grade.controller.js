@@ -53,12 +53,11 @@ export const getAllGrade = async (req, res, next) => {
 
 export const regStudentPromotion = async (req, res, next) => {
   const StudentPromotionData = req.body; // Assuming the request body contains an array of grades
- 
+
   if (StudentPromotionData.length === 0) {
-    return res.status(400).json({
-      success: false,
-      message: "Please select the students to promote",
-    });
+ 
+ 
+    return next(errorHandler(401, "Please select the students to promote"));
   }
 
   try {
@@ -69,10 +68,7 @@ export const regStudentPromotion = async (req, res, next) => {
     });
 
     if (!findGradeID) {
-      return res.status(400).json({
-        success: false,
-        message: "Grade ID not found",
-      });
+      return next(errorHandler(401, "Grade ID not found"));
     }
 
     const findStudentID = await prisma.student.findFirst({
@@ -80,13 +76,10 @@ export const regStudentPromotion = async (req, res, next) => {
         studentID: StudentPromotionData.studentID,
       },
     });
-    console.log(StudentPromotionData.studentID);
+    // console.log(StudentPromotionData.studentID);
 
     if (!findStudentID) {
-      return res.status(400).json({
-        success: false,
-        message: "Student ID not found",
-      });
+      return next(errorHandler(401, "Student ID not found"));
     }
 
     // // Iterate over the provided grades and check if they already exist
@@ -117,6 +110,7 @@ export const regStudentPromotion = async (req, res, next) => {
         message: `Following promotion(s) already exist`,
         existingGrades: existingGrades,
       });
+      // return next(errorHandler(401, "School already exists"));
     }
 
     // Insert all grades at once since none of them are duplicates
@@ -145,40 +139,3 @@ export const getStudentPromotion = async (req, res, next) => {
     next(error);
   }
 };
-
-// export const getSubjectBySubjectID = async (req, res, next) => {
-//   const { subjectID } = req.params;
-//   console.log(req.params);
-//   try {
-//     const subjectDetails = await Subject.find({
-//       subjectID,
-//     });
-//     if (subjectDetails.length === 0) {
-//       next(errorHandler(401, "Subject Not Found"));
-//     } else {
-//       res.status(201).json({
-//         message: "Subject Details Fetched",
-//         subjectDetails: subjectDetails,
-//       });
-//     }
-//   } catch (error) {
-//     next(error.message);
-//   }
-// };
-
-// export const getAllgrades = async (req, res, next) => {
-//   try {
-//     const subjectDetails = await Subject.find();
-
-//     if (subjectDetails.length === 0) {
-//       next(errorHandler(401, "Subject Not Found"));
-//     } else {
-//       res.status(201).json({
-//         message: "Subject Details Fetched",
-//         subjectDetails: subjectDetails,
-//       });
-//     }
-//   } catch (error) {
-//     next(error.message);
-//   }
-// };

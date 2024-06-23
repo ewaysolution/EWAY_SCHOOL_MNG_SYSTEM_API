@@ -7,7 +7,7 @@ export const subjectRegister = async (req, res, next) => {
 
   try {
     for (const subject of subjects) {
-      const { subjectID, name, grade } = subject;
+      const { subjectID, name, grade, category } = subject;
 
       const existingSubject = await prisma.Subject.findUnique({
         where: {
@@ -17,18 +17,17 @@ export const subjectRegister = async (req, res, next) => {
 
       // If subject already exists, return an error
       if (existingSubject) {
-        return res.status(400).json({
-          success: false,
-          message: `Subject with ID ${subjectID} already exists`,
-        });
+        return next(
+          errorHandler(401, `Subject with ID ${subjectID} already exists`)
+        );
       }
 
-   
       await prisma.Subject.create({
         data: {
           subjectID,
           name,
           grade,
+          category,
         },
       });
     }
@@ -54,39 +53,3 @@ export const getAllSubjects = async (req, res, next) => {
     next(error.message);
   }
 };
-// export const getSubjectBySubjectID = async (req, res, next) => {
-//   const { subjectID } = req.params;
-//   console.log(req.params);
-//   try {
-//     const subjectDetails = await Subject.find({
-//       subjectID,
-//     });
-//     if (subjectDetails.length === 0) {
-//       next(errorHandler(401, "Subject Not Found"));
-//     } else {
-//       res.status(201).json({
-//         message: "Subject Details Fetched",
-//         subjectDetails: subjectDetails,
-//       });
-//     }
-//   } catch (error) {
-//     next(error.message);
-//   }
-// };
-
-// export const getAllSubjects = async (req, res, next) => {
-//   try {
-//     const subjectDetails = await Subject.find();
-
-//     if (subjectDetails.length === 0) {
-//       next(errorHandler(401, "Subject Not Found"));
-//     } else {
-//       res.status(201).json({
-//         message: "Subject Details Fetched",
-//         subjectDetails: subjectDetails,
-//       });
-//     }
-//   } catch (error) {
-//     next(error.message);
-//   }
-// };

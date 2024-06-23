@@ -9,7 +9,4 @@ teacherRouter.post("/subjectTaken", verifyToken,subjectTaken);
 teacherRouter.get("/get/:schoolID", verifyToken,getAllTeacherBySchoolID);
 teacherRouter.put("/:schoolID/:teacherID", verifyToken,updateTeacherByTeacherSchoolID);
 
-// teacherRouter.get("/get/:schoolID", getAllTeacherDetails);
-// teacherRouter.get("/get/teacher/:teacherID",getTeacherWithSchoolDetails);
-// teacherRouter.delete("/delete/:schoolID/:teacherID",deleteTeacher );
 export default teacherRouter;

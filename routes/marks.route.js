@@ -11,18 +11,5 @@ marksRouter.get("/get/:schoolID/:grade/:term", verifyToken, getMarksByGradeTerm)
 marksRouter.put("/update/:schoolID/:studentID/:id", verifyToken, updateMarks);
 marksRouter.delete("/delete/:schoolID/:studentID/:id", verifyToken, deleteMarks);
 
-
-// marksRouter.get("/view/:schoolID", verifyToken, getMarkBySchoolID);
-// marksRouter.get("/view/:schoolID/:studentID", verifyToken, getMarks);
-// marksRouter.get(
-//   "/view/:schoolID/:studentID/:grade/:term",
-//   getMarkBySchIDStdIDTermGrade
-// );
-
-// marksRouter.delete(
-//   "/delete/:id",
-//   deleteMarks
-// );
-// marksRouter.get("/getall", getAllSchoolMarks);
-
+ 
 export default marksRouter;

@@ -30,9 +30,11 @@ export const registerMarks = async (req, res, next) => {
         id: true,
       },
     });
-    console.log(StudentGradeID);
+    // console.log(StudentGradeID);
     if (!StudentGradeID) {
-      next(errorHandler(401, `Student not found in the selected grade.`));
+      return next(
+        errorHandler(401, `Student not found in the selected grade.`)
+      );
     }
 
     // Check for duplicate subject IDs in the provided subjectMarks array
@@ -63,7 +65,7 @@ export const registerMarks = async (req, res, next) => {
     });
 
     if (marksExist) {
-      next(errorHandler(401, "Marks already exists"));
+      return next(errorHandler(401, "Marks already exists"));
     } else {
       const newMarks = await prisma.marks.create({
         data: {
@@ -103,6 +105,10 @@ export const getAllMarks = async (req, res, next) => {
       },
     });
 
+    if (marks.length === 0) {
+      return next(errorHandler(401, "Marks not found"));
+    }
+
     // // Modify the structure of each mark object in place
     // marks.forEach((mark) => {
     //   mark.grade = mark.grade.gradeLevel; // Replacing grade object with gradeLevel string
@@ -135,9 +141,11 @@ export const updateMarks = async (req, res, next) => {
         id: true,
       },
     });
-    console.log(StudentGradeID);
+    // console.log(StudentGradeID);
     if (!StudentGradeID) {
-      next(errorHandler(401, `Student not found in the selected grade.`));
+      return next(
+        errorHandler(401, `Student not found in the selected grade.`)
+      );
     }
 
     // Check for  marks ID available
@@ -148,7 +156,7 @@ export const updateMarks = async (req, res, next) => {
     });
 
     if (existingMarks.length === 0) {
-      next(errorHandler(401, "Marks not found"));
+      return next(errorHandler(401, "Marks not found"));
     }
 
     // Check for duplicate Marks
@@ -159,13 +167,16 @@ export const updateMarks = async (req, res, next) => {
           { studentID: studentID },
           { term: term },
           { gradeID: gradeID },
-          { studentGradeID: StudentGradeID.id },
+          { studentGradeID: StudentGradeID.id }, // academic year or promoted grade
         ],
+        NOT: {
+          id: id,
+        },
       },
     });
 
     if (marksExist) {
-      next(errorHandler(401, "The grade marks already exist"));
+      return next(errorHandler(401, "Student Marks already exist"));
     }
 
     const updatedMarks = await prisma.marks.updateMany({
@@ -206,7 +217,7 @@ export const deleteMarks = async (req, res, next) => {
       },
     });
     if (existingMarks.length === 0) {
-      next(errorHandler(401, "Marks not found"));
+      return next(errorHandler(401, "Marks not found"));
     }
 
     const deletedMarks = await prisma.marks.deleteMany({
@@ -233,11 +244,9 @@ export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
     });
 
     if (!gradeDetails) {
-      next(errorHandler(401, "Grade not found"));
+      return next(errorHandler(401, "Grade not found"));
     }
     // --
-
-
 
     // Find the academic year for the given schoolID and grade and studentID
     const FindAcademicYear = await prisma.studentGrade.findFirst({
@@ -251,11 +260,10 @@ export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
       select: { academicYear: true },
     });
 
-
     if (!FindAcademicYear) {
-      next(errorHandler(401, "Marks not found")); // student not found in the selected grade
+      return next(errorHandler(401, "Marks not found")); // student not found in the selected grade
     }
-      //
+    //
 
     // // Find all marks for the given schoolID, grade, and term and academicYear
     const AllMarks = await prisma.marks.findMany({
@@ -288,8 +296,8 @@ export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
     });
 
     if (AllMarks.length === 0) {
-      next(errorHandler(401, "Marks not found"));
-    }    
+      return next(errorHandler(401, "Marks not found"));
+    }
     //--
 
     // // Find all subjects
@@ -304,22 +312,24 @@ export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
         return {
           ...subjectMark,
           subjectName: subjectDetail ? subjectDetail.name : "Unknown",
+          category: subjectDetail ? subjectDetail.category : "Unknown",
         };
       });
+
+      // Calculate TotalMarks
+      const totalMarks = mark.subjectMarks.reduce((total, subjectMark) => {
+        // Convert subjectMark.marks to a number; if it's not valid or NaN, default to 0
+        const marks = Number(subjectMark.marks) || 0;
+
+        return total + marks;
+      }, 0);
+
       return {
         ...mark,
         subjectMarks: enrichedSubjectMarks,
-        TotalMarks: enrichedSubjectMarks.reduce(
-          (total, subjectMark) => total + subjectMark.marks,
-          0
-        ),
+        TotalMarks: totalMarks,
         AverageMarks: parseFloat(
-          (
-            enrichedSubjectMarks.reduce(
-              (total, subjectMark) => total + subjectMark.marks,
-              0
-            ) / enrichedSubjectMarks.length
-          ).toFixed(2)
+          (totalMarks / enrichedSubjectMarks.length).toFixed(2)
         ),
       };
     });
@@ -344,14 +354,82 @@ export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
       (student) => student.studentID === studentID
     );
 
+    // order the subject marks by subjectID and category
+    const sortSubjectsByIDAndCategory = (students) => {
+      students.forEach((student) => {
+        student.subjectMarks.sort((a, b) => {
+          // Compare by subjectID first
+          const idComparison = a.subjectID.localeCompare(b.subjectID);
+
+          // If subjectID is the same, then compare by category
+          if (idComparison === 0) {
+            return a.category - b.category;
+          }
+
+          return idComparison;
+        });
+      });
+    };
+
+    // Example usage:
+    sortSubjectsByIDAndCategory(SearchedStudent);
+    sortSubjectsByIDAndCategory(RankOneStudent);
+    // order the subject marks by subjectID and category
+
+    // take highest
+    function getHighestMarks(marksDetails) {
+      let highestMarks = {};
+    
+      // Iterate over each student's marks
+      marksDetails.forEach((student) => {
+        student.subjectMarks.forEach((subject) => {
+          // Convert subject.marks to a number; if it's not valid, default to 0
+          const marks = Number(subject.marks) || 0;
+    
+          // Update highestMarks if current subject marks are higher
+          if (
+            !highestMarks[subject.subjectID] ||
+            marks > highestMarks[subject.subjectID].marks
+          ) {
+            highestMarks[subject.subjectID] = {
+              subjectID: subject.subjectID,
+              marks: marks,
+              subjectName: subject.subjectName,
+              category: subject.category,
+            };
+          }
+        });
+      });
+    
+      return highestMarks;
+    }
+
+    // Call the function to get highest marks
+    // compare both and return the highest
+    const highestMarks = getHighestMarks(enrichedMarks);
+
+    //Take only the highest marks in search student subjects
+    // Filter highestMarks to match the searchedStudent's subjects
+    const filteredHighestMarks = SearchedStudent[0].subjectMarks.reduce(
+      (result, subject) => {
+        if (highestMarks[subject.subjectID]) {
+          result[subject.subjectID] = highestMarks[subject.subjectID];
+        }
+        return result;
+      },
+      {}
+    );
+    //Take only the highest marks in search student subjects
+
     if (SearchedStudent.length === 0) {
-      next(errorHandler(401, "Marks not found"));
+      return next(errorHandler(401, "Marks not found"));
     }
     return res.status(200).json({
       message: "Marks details fetched",
       marksDetails: {
         SearchedStudent: SearchedStudent,
         RankOneStudent: RankOneStudent,
+        highestMarks: filteredHighestMarks,
       },
     });
   } catch (error) {
@@ -386,7 +464,7 @@ export const getMarksByGradeTerm = async (req, res, next) => {
     });
 
     if (marks.length === 0) {
-      next(errorHandler(401, "Marks not found"));
+      return next(errorHandler(401, "Marks not found"));
     }
 
     // Calculate total marks, average marks, and place for each student
@@ -440,194 +518,3 @@ export const getMarksByGradeTerm = async (req, res, next) => {
     next(error);
   }
 };
-
-// export const getAllSchoolMarks = async (req, res, next) => {
-//   try {
-//     const marks = await Marks.find();
-//     if (marks.length === 0) {
-//       next(errorHandler(401, "No Student Marks in this system"));
-//     } else {
-//       return res.status(201).json({
-//         message: "All school student marks details Fetched",
-//         studentMarksDetails: marks,
-//       });
-//     }
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-// export const getMarks = async (req, res, next) => {
-//   const { schoolID, studentID } = req.params;
-//   try {
-//     const marks = await Marks.find({
-//       schoolID,
-//       studentID,
-//     });
-//     if (marks.length === 0) {
-//       next(
-//         errorHandler(
-//           401,
-//           `Information regarding the academic marks for student ID ${studentID} is currently unavailable.`
-//         )
-//       );
-//     } else {
-//       return res.status(201).json({
-//         message: "Student Marks Details Fetched",
-//         studentMarksDetails: marks,
-//       });
-//     }
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-// // get marks by
-// export const getMarkBySchIDStdIDTermGrade = async (req, res, next) => {
-//   const { schoolID, studentID, grade, term } = req.params;
-//   try {
-//     const marks = await Marks.find({
-//       schoolID,
-//       studentID,
-//       grade,
-//       term,
-//     });
-//     if (marks.length === 0) {
-//       next(
-//         errorHandler(
-//           401,
-//           `Information regarding the academic marks for student index ${studentID} is currently unavailable.`
-//         )
-//       );
-//     } else {
-//       res.status(201).json({
-//         message: "Student Marks Details Fetched",
-//         studentMarksDetails: marks,
-//       });
-//     }
-//   } catch (error) {
-//     next(error.message);
-//   }
-// };
-
-// export const getMarkBySchoolID = async (req, res, next) => {
-//   const { schoolID } = req.params;
-
-//   try {
-//     const marks = await Marks.aggregate([
-//       {
-//         $match: { schoolID: schoolID },
-//       },
-//       {
-//         $unwind: "$subjectMarks",
-//       },
-//       {
-//         $lookup: {
-//           from: "subjects",
-//           localField: "subjectMarks.subjectID",
-//           foreignField: "subjectID",
-//           as: "subjectDetails",
-//         },
-//       },
-//       {
-//         $unwind: "$subjectDetails",
-//       },
-//       {
-//         $lookup: {
-//           from: "students",
-//           localField: "studentID",
-//           foreignField: "studentID",
-//           as: "studentDetails",
-//         },
-//       },
-//       {
-//         $unwind: "$studentDetails",
-//       },
-//       {
-//         $group: {
-//           _id: "$_id",
-//           schoolID: { $first: "$schoolID" },
-//           studentID: { $first: "$studentID" },
-//           term: { $first: "$term" },
-//           grade: { $first: "$grade" },
-//           stream: { $first: "$stream" },
-//           classType: { $first: "$classType" },
-//           createdBy: { $first: "$createdBy" },
-//           lastModifiedBy: { $first: "$lastModifiedBy" },
-//           active: { $first: "$active" },
-//           createdAt: { $first: "$createdAt" },
-//           updatedAt: { $first: "$updatedAt" },
-//           subjectMarks: {
-//             $push: {
-//               subjectID: "$subjectMarks.subjectID",
-//               marks: "$subjectMarks.marks",
-//               subjectName: "$subjectDetails.subjectName",
-//             },
-//           },
-//           studentDetails: {
-//             $first: "$studentDetails",
-//           },
-//         },
-//       },
-//       {
-//         $project: {
-//           "studentDetails.password": 0, // Exclude the 'password' field from studentDetails
-//         },
-//       },
-//     ]);
-
-//     if (marks.length === 0) {
-//       next(errorHandler(401, "Student Marks Not Found"));
-//     } else {
-//       res.status(201).json({
-//         message: "Student Marks Details Fetched",
-//         studentMarksDetails: marks,
-//       });
-//     }
-//   } catch (error) {
-//     next(error.message);
-//   }
-// };
-
-// export const deleteMarks = async (req, res, next) => {
-//   try {
-//     const markIdString = req.params.id;
-
-//     // Check if the input is a valid ObjectId
-//     if (!mongoose.Types.ObjectId.isValid(markIdString)) {
-//       return res.status(400).json({
-//         message: "Invalid ObjectId format",
-//       });
-//     }
-
-//     const markId = new mongoose.Types.ObjectId(markIdString);
-
-//     const response = await Marks.deleteOne({
-//       _id: markId,
-//     });
-
-//     if (response.deletedCount > 0) {
-//       // Successfully deleted
-//       res.status(200).json({
-//         message: "Marks Details Deleted Successfully",
-//       });
-//     } else {
-//       // Document not found, consider it deleted
-//       res.status(200).json({
-//         message: "Marks Details Not Found (considered deleted)",
-//       });
-//     }
-//   } catch (error) {
-//     // Handle unexpected errors
-//     console.error("Error:", error.message);
-//     next(errorHandler(500, "Internal Server Error"));
-//   }
-// };
-
-// export const inActiveMarks = async (req, res, next) => {
-//   res.send("Hello");
-// };
-
-// export const updateMarks = async (req, res, next) => {
-//   res.send("Hello");
-// };
