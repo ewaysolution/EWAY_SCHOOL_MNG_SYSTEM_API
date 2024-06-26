@@ -261,11 +261,11 @@ export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
     });
 
     if (!FindAcademicYear) {
-      return next(errorHandler(401, "Marks not found")); // student not found in the selected grade
+      return next(errorHandler(401, "Student marks not found")); // student not found in the selected grade
     }
     //
 
-    // // Find all marks for the given schoolID, grade, and term and academicYear
+    // // Find all marks for the given schoolID, grade, and term and academicYear to calculate rank other
     const AllMarks = await prisma.marks.findMany({
       where: {
         AND: [
@@ -296,9 +296,18 @@ export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
     });
 
     if (AllMarks.length === 0) {
-      return next(errorHandler(401, "Marks not found"));
+      return next(errorHandler(401, "Student marks not found"));
     }
     //--
+
+    // Find all marks particular studentID
+    const studentMarks = AllMarks.filter(
+      (mark) => mark.studentID === studentID
+    );
+    if (studentMarks.length === 0) {
+      return next(errorHandler(401, "Student marks not found"));
+    }
+    // Find all marks particular studentID
 
     // // Find all subjects
     const subjectDetails = await prisma.subject.findMany();
@@ -379,13 +388,13 @@ export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
     // take highest
     function getHighestMarks(marksDetails) {
       let highestMarks = {};
-    
+
       // Iterate over each student's marks
       marksDetails.forEach((student) => {
         student.subjectMarks.forEach((subject) => {
           // Convert subject.marks to a number; if it's not valid, default to 0
           const marks = Number(subject.marks) || 0;
-    
+
           // Update highestMarks if current subject marks are higher
           if (
             !highestMarks[subject.subjectID] ||
@@ -400,7 +409,7 @@ export const getMarksByStudentIDGradeTerm = async (req, res, next) => {
           }
         });
       });
-    
+
       return highestMarks;
     }
 

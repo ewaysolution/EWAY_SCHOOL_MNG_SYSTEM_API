@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
+
+
 import { errorHandler } from "../util/error.js";
 const prisma = new PrismaClient();
 export const subjectRegister = async (req, res, next) => {
@@ -42,6 +44,10 @@ export const subjectRegister = async (req, res, next) => {
 };
 
 export const getAllSubjects = async (req, res, next) => {
+
+
+
+
   try {
     const subjectDetails = await prisma.subject.findMany();
 
