@@ -6,22 +6,28 @@ import nodemailer from "nodemailer";
 import { token } from "morgan";
 import crypto from "crypto";
 import cryptoRandomString from "crypto-random-string";
-const prisma = new PrismaClient();
+import dotenv from "dotenv";
+dotenv.config();
 
+const prisma = new PrismaClient();
 // Create a transporter for Outlook
 const transporter = nodemailer.createTransport({
-  host: "smtp-mail.outlook.com", // Outlook SMTP server
-  port: 587, // Port for TLS/STARTTLS
-  secure: false, // true for 465, false for other ports
+  host: process.env.HOST, // Outlook SMTP server
+  port: process.env.PORT, // Port for TLS/STARTTLS
+  service: process.env.SERVICE,
+  // secure: true, // true for 465, false for other ports
   auth: {
-    user: "help.cleverbit@outlook.com", // Your Outlook email address
-    pass: "fsnjsmciunpmtbde", // Your Outlook password or application-specific password
+    user: process.env.USER_NAME, // Your Outlook email address
+    pass: process.env.PASSWORD, // Your Outlook password or application-specific password
   },
   tls: {
-    ciphers: "SSLv3",
+    // ciphers: "SSLv3",
     rejectUnauthorized: false,
   },
 });
+
+// passwordResetMail('aasim782@gmail.com', '555sa');
+
 
 async function emailVerificationMail(email, verificationToken) {
   // send mail with defined transport object
@@ -583,15 +589,21 @@ xmlns:o="urn:schemas-microsoft-com:office:office"
 </html>
 
 `;
-  const info = await transporter.sendMail({
-    from: '"Cleverbit team " <help.cleverbit@outlook.com>', // sender address
-    to: email, // list of receivers
-    subject: "Account Verification", // Subject line
-    // text: "Hello world?", // plain text body
-    html: verificationMail, // html body
-  });
 
-  console.log("Message sent: %s", info.messageId);
+  try {
+    const info = await transporter.sendMail({
+      from: `"Cleverbit team " <${process.env.FROM}>`, // sender address
+      to: email, // list of receivers
+      subject: "Account Verification", // Subject line
+      // text: "Hello world?", // plain text body
+      html: verificationMail, // html body
+    });
+
+    console.log("Message sent: %s", info.messageId);
+  } catch (error) {
+    console.error("Error sending email:", error);
+    // Handle your error here, such as logging, sending a different email, etc.
+  }
 }
 
 async function passwordResetMail(email, resetToken) {
@@ -1155,15 +1167,19 @@ xmlns:o="urn:schemas-microsoft-com:office:office"
 </html>
 
 `;
-  const info = await transporter.sendMail({
-    from: '"Cleverbit team " <help.cleverbit@outlook.com>', // sender address
-    to: email, // list of receivers
-    subject: "Reset Password", // Subject line
-    // text: "Hello world?", // plain text body
-    html: verificationMail, // html body
-  });
+  try {
+    const info = await transporter.sendMail({
+      from: `"Cleverbit team " <${process.env.FROM}>`, // sender address
+      to: email, // list of receivers
+      subject: "Reset Password", // Subject line
+      // text: "Hello world?", // plain text body
+      html: verificationMail, // html body
+    });
 
-  console.log("Message sent: %s", info.messageId);
+    console.log("Message sent: %s", info.messageId);
+  } catch (error) {
+    console.log(error);
+  }
 }
 
 export const schoolPasswordResetRequest = async (req, res, next) => {
@@ -1179,40 +1195,43 @@ export const schoolPasswordResetRequest = async (req, res, next) => {
     },
   });
   if (!school) {
-    return next(errorHandler(404, "Email not found"));
-  }
+    res.status(200).json({
+      success: true,
+      message: "Password reset link sent to your email",
+    });
+  } else {
+    const resetToken = crypto.randomBytes(32).toString("hex");
 
-  const resetToken = crypto.randomBytes(32).toString("hex");
-
-  const updatedUser = await prisma.school.update({
-    where: {
-      schoolID: school.schoolID,
-      contact: {
-        email: email,
+    const updatedUser = await prisma.school.update({
+      where: {
+        schoolID: school.schoolID,
+        contact: {
+          email: email,
+        },
       },
-    },
-    include: {
-      contact: true,
-    },
-    data: {
-      resetToken: resetToken,
-    },
-  });
+      include: {
+        contact: true,
+      },
+      data: {
+        resetToken: resetToken,
+      },
+    });
 
-  if (!updatedUser) {
-    return next(errorHandler(500, "Failed to reset password"));
+    if (!updatedUser) {
+      return next(errorHandler(500, "Failed to reset password"));
+    }
+
+    // send email
+    passwordResetMail(email, resetToken);
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset link sent to your email",
+    });
   }
-
-  // send email
-  passwordResetMail(email, resetToken);
-
-  res.status(200).json({
-    success: true,
-    message: "Password reset link sent to your email",
-  });
 };
 
-export const schoolPasswordChange = async (req, res, next) => {
+export const changePasswordResetToken = async (req, res, next) => {
   const { email, resetToken, newPassword } = req.body;
   console.log(email, resetToken, newPassword);
   const hashedPassword = bcryptjs.hashSync(newPassword, 10);
@@ -1250,6 +1269,45 @@ export const schoolPasswordChange = async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: "Password changed successfully",
+  });
+};
+
+export const changePassword = async (req, res, next) => {
+  const { email, schoolID, newPassword } = req.body;
+
+  const hashedPassword = bcryptjs.hashSync(newPassword, 10);
+
+  const findSchool = await prisma.school.findFirst({
+    where: {
+      schoolID: schoolID,
+      contact: {
+        email: email,
+      },
+    },
+  });
+  if (!findSchool) {
+    return next(errorHandler(404, "Password update failed"));
+  }
+
+  const updatedUser = await prisma.school.update({
+    where: {
+      schoolID: findSchool.schoolID,
+      contact: {
+        email: email,
+      },
+    },
+    data: {
+      password: hashedPassword,
+    },
+  });
+
+  if (!updatedUser) {
+    return next(errorHandler(500, "Password update failed"));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Password has been changed",
   });
 };
 

@@ -5,6 +5,16 @@ const prisma = new PrismaClient();
 export const getDashboardElements = async (req, res, next) => {
   const { schoolID } = req.params;
   try {
+    // school found or not
+    const school = await prisma.school.findFirst({
+      where: {
+        schoolID: schoolID,
+      },
+    });
+    if (!school) {
+      return next(errorHandler(401, "School not found"));
+    }
+
     // Count active and inactive students
     const [totalStudents, activeStudents, inactiveStudents] = await Promise.all(
       [
@@ -36,6 +46,7 @@ export const getDashboardElements = async (req, res, next) => {
         gender: true,
       },
     });
+
     // Convert the genderCounts array to a more readable format
     const studentGender = studentGenderCount.reduce((acc, item) => {
       acc[item.gender] = item._count.gender;
@@ -79,18 +90,16 @@ export const getDashboardElements = async (req, res, next) => {
       return acc;
     }, {});
 
-    res
-      .status(201)
-      .json({
-        totalStudents,
-        activeStudents,
-        inactiveStudents,
-        studentGender,
-        activeTeachers,
-        totalTeachers,
-        inactiveTeachers,
-        teacherGender,
-      });
+    res.status(201).json({
+      totalStudents,
+      activeStudents,
+      inactiveStudents,
+      studentGender,
+      activeTeachers,
+      totalTeachers,
+      inactiveTeachers,
+      teacherGender,
+    });
   } catch (error) {
     console.error("Error counting students:", error);
   } finally {

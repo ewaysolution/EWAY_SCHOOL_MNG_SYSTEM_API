@@ -2,228 +2,24 @@ import bcryptjs from "bcryptjs";
 import nodemailer from "nodemailer";
 import { PrismaClient } from "@prisma/client";
 import { errorHandler } from "../util/error.js";
- 
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
 const prisma = new PrismaClient();
-
-export const schoolLogin = async (req, res, next) => {
-  const { schoolID, password } = req.body;
-  try {
-    const school = await prisma.school.findUnique({
-      where: {
-        schoolID: schoolID,
-      },
-      // Foreign table include
-      select: {
-        schoolID: true,
-        apiKey: true,
-        avatar: true,
-        site: true,
-        studentCount: true,
-        name: true,
-        userType: true,
-        avatar: true,
-        apiKey: true,
-        password: true,
-        zone: true,
-        emailVerified: true,
-        contact: {
-          select: {
-            email: true,
-            address: true,
-            phone: true,
-          },
-        },
-      },
-    });
-
-    if (school) {
-      const isMatch = bcryptjs.compareSync(password, school.password);
-      if (isMatch) {
-        const { password, ...updatedSchool } = school;
-
-        if (school.emailVerified === false) {
-          return next(errorHandler(401, "Please verify your email address."));
-        }
-
-        const token = jwt.sign(
-          {
-            apiKey: school.apiKey,
-            schoolID: schoolID,
-          },
-          process.env.JWT_SECRET
-          // {
-          //   expiresIn: "30s",
-          // }
-        );
-        return res
-          .cookie("token", token, {
-            path: "/",
-            // expires: new Date(Date.now() + 10000 * 30),
-            httpOnly: true,
-            sameSite: "lax",
-          })
-          .status(200)
-          .json({
-            Message: "Successfully Login",
-            SchoolDetails: updatedSchool,
-            token,
-          });
-      } else {
-        return next(errorHandler(401, "Please check your credentials."));
-      }
-    } else {
-      return next(errorHandler(401, "Please check your credentials."));
-    }
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const teacherLogin = async (req, res, next) => {
-  const { teacherID, password } = req.body;
-  try {
-    const teacher = await prisma.teacher.findUnique({
-      where: {
-        teacherID: teacherID,
-      },
-      // Foreign table include
-      select: {
-        teacherID: true,
-        password: true,
-        avatar: true,
-        medium: true,
-        initial: true,
-        fname: true,
-        lname: true,
-        fullName: true,
-        gender: true,
-        religion: true,
-        DOB: true,
-        NIC: true,
-        marriageStatus: true,
-        residentialAddress: true,
-        permanentAddress: true,
-        mobile: true,
-        home: true,
-        email: true,
-        userType: true,
-        shortBIO: true,
-        schoolID: true,
-        school: {
-          select: {
-            name: true,
-            avatar: true,
-            apiKey: true,
-          },
-        },
-      },
-    });
-
-    if (teacher) {
-      const isMatch = bcryptjs.compareSync(password, teacher.password);
-      if (isMatch) {
-        const token = jwt.sign(
-          {
-            teacherID: teacherID,
-          },
-          process.env.JWT_SECRET
-          // {
-          //   expiresIn: "30s",
-          // }
-        );
-        const { password, ...updatedTeacher } = teacher;
-
-        return res
-          .cookie("token", token, {
-            path: "/",
-            // expires: new Date(Date.now() + 10000 * 30),
-            httpOnly: true,
-            sameSite: "lax",
-          })
-          .status(200)
-          .json({
-            Message: "Successfully Login",
-            TeacherDetails: updatedTeacher,
-            token,
-          });
-      } else {
-        return next(errorHandler(401, "Please check your credentials."));
-      }
-    } else {
-      return next(errorHandler(401, "Please check your credentials."));
-    }
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const studentLogin = async (req, res, next) => {
-  const { studentID, password } = req.body;
-  try {
-    const student = await prisma.student.findUnique({
-      where: {
-        studentID: studentID,
-      },
-    });
-
-    if (student) {
-      const isMatch = bcryptjs.compareSync(password, student.password);
-      if (isMatch) {
-        const token = jwt.sign(
-          {
-            studentID: studentID,
-          },
-          process.env.JWT_SECRET
-          // {
-          //   expiresIn: "30s",
-          // }
-        );
-        return res
-          .cookie("token", token, {
-            path: "/",
-            // expires: new Date(Date.now() + 10000 * 30),
-            httpOnly: true,
-            sameSite: "lax",
-          })
-          .status(200)
-          .json({
-            Message: "Successfully Login",
-            StudentDetails: student,
-
-            token,
-          });
-      } else {
-        return next(errorHandler(401, "Please check your credentials."));
-      }
-    } else {
-      return next(errorHandler(401, "Please check your credentials."));
-    }
-  } catch (error) {
-    next(error);
-  }
-};
-
-
-
-
-
-
-
-
 
 // for welcome message
 // Create a transporter for Outlook
 const transporter = nodemailer.createTransport({
-  host: "smtp-mail.outlook.com", // Outlook SMTP server
-  port: 587, // Port for TLS/STARTTLS
-  secure: false, // true for 465, false for other ports
+  host: process.env.HOST, // Outlook SMTP server
+  port: process.env.PORT, // Port for TLS/STARTTLS
+  service: process.env.SERVICE,
+  // secure: true, // true for 465, false for other ports
   auth: {
-    user: "help.cleverbit@outlook.com", // Your Outlook email address
-    pass: "fsnjsmciunpmtbde", // Your Outlook password or application-specific password
+    user: process.env.USER_NAME, // Your Outlook email address
+    pass: process.env.PASSWORD, // Your Outlook password or application-specific password
   },
   tls: {
-    ciphers: "SSLv3",
+    // ciphers: "SSLv3",
     rejectUnauthorized: false,
   },
 });
@@ -564,19 +360,219 @@ async function welcomeMail(email) {
   
   </html>`;
 
-  const info = await transporter.sendMail({
-    from: '"Cleverbit team " <help.cleverbit@outlook.com>', // sender address
-    to: email, // list of receivers
-    subject: "Welcome", // Subject line
-    // text: "Hello world?", // plain text body
-    html: welcomeMailTemp, // html body
-  });
+  try {
+    const info = await transporter.sendMail({
+      from: `"Cleverbit team " <${process.env.FROM}>`, // sender address
+      to: email, // list of receivers
+      subject: "Welcome", // Subject line
+      // text: "Hello world?", // plain text body
+      html: welcomeMailTemp, // html body
+    });
 
-  console.log("Message sent: %s", info.messageId);
+    console.log("Message sent: %s", info.messageId);
+  } catch (error) {
+    console.log(error);
+  }
 }
 // for welcome message
 
- 
+export const schoolLogin = async (req, res, next) => {
+  const { schoolID, password } = req.body;
+  try {
+    const school = await prisma.school.findUnique({
+      where: {
+        schoolID: schoolID,
+      },
+      // Foreign table include
+      select: {
+        schoolID: true,
+        apiKey: true,
+        avatar: true,
+        site: true,
+        studentCount: true,
+        name: true,
+        userType: true,
+        avatar: true,
+        apiKey: true,
+        password: true,
+        zone: true,
+        emailVerified: true,
+        contact: {
+          select: {
+            email: true,
+            address: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    if (school) {
+      const isMatch = bcryptjs.compareSync(password, school.password);
+      if (isMatch) {
+        const { password, ...updatedSchool } = school;
+
+        if (school.emailVerified === false) {
+          return next(errorHandler(401, "Please verify your email address."));
+        }
+
+        const token = jwt.sign(
+          {
+            apiKey: school.apiKey,
+            schoolID: schoolID,
+          },
+          process.env.JWT_SECRET
+          // {
+          //   expiresIn: "30s",
+          // }
+        );
+        return res
+          .cookie("token", token, {
+            path: "/",
+            // expires: new Date(Date.now() + 10000 * 30),
+            httpOnly: true,
+            sameSite: "lax",
+          })
+          .status(200)
+          .json({
+            Message: "Successfully Login",
+            SchoolDetails: updatedSchool,
+            token,
+          });
+      } else {
+        return next(errorHandler(401, "Please check your credentials."));
+      }
+    } else {
+      return next(errorHandler(401, "Please check your credentials."));
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const teacherLogin = async (req, res, next) => {
+  const { teacherID, password } = req.body;
+  try {
+    const teacher = await prisma.teacher.findUnique({
+      where: {
+        teacherID: teacherID,
+      },
+      // Foreign table include
+      select: {
+        teacherID: true,
+        password: true,
+        avatar: true,
+        medium: true,
+        initial: true,
+        fname: true,
+        lname: true,
+        fullName: true,
+        gender: true,
+        religion: true,
+        DOB: true,
+        NIC: true,
+        marriageStatus: true,
+        residentialAddress: true,
+        permanentAddress: true,
+        mobile: true,
+        home: true,
+        email: true,
+        userType: true,
+        shortBIO: true,
+        schoolID: true,
+        school: {
+          select: {
+            name: true,
+            avatar: true,
+            apiKey: true,
+          },
+        },
+      },
+    });
+
+    if (teacher) {
+      const isMatch = bcryptjs.compareSync(password, teacher.password);
+      if (isMatch) {
+        const token = jwt.sign(
+          {
+            teacherID: teacherID,
+          },
+          process.env.JWT_SECRET
+          // {
+          //   expiresIn: "30s",
+          // }
+        );
+        const { password, ...updatedTeacher } = teacher;
+
+        return res
+          .cookie("token", token, {
+            path: "/",
+            // expires: new Date(Date.now() + 10000 * 30),
+            httpOnly: true,
+            sameSite: "lax",
+          })
+          .status(200)
+          .json({
+            Message: "Successfully Login",
+            TeacherDetails: updatedTeacher,
+            token,
+          });
+      } else {
+        return next(errorHandler(401, "Please check your credentials."));
+      }
+    } else {
+      return next(errorHandler(401, "Please check your credentials."));
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const studentLogin = async (req, res, next) => {
+  const { studentID, password } = req.body;
+  try {
+    const student = await prisma.student.findUnique({
+      where: {
+        studentID: studentID,
+      },
+    });
+
+    if (student) {
+      const isMatch = bcryptjs.compareSync(password, student.password);
+      if (isMatch) {
+        const token = jwt.sign(
+          {
+            studentID: studentID,
+          },
+          process.env.JWT_SECRET
+          // {
+          //   expiresIn: "30s",
+          // }
+        );
+        return res
+          .cookie("token", token, {
+            path: "/",
+            // expires: new Date(Date.now() + 10000 * 30),
+            httpOnly: true,
+            sameSite: "lax",
+          })
+          .status(200)
+          .json({
+            Message: "Successfully Login",
+            StudentDetails: student,
+
+            token,
+          });
+      } else {
+        return next(errorHandler(401, "Please check your credentials."));
+      }
+    } else {
+      return next(errorHandler(401, "Please check your credentials."));
+    }
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const verifyEmail = async (req, res, next) => {
   const { verificationToken, email } = req.body;
